@@ -2,6 +2,7 @@ package com.example.backend.controller;
 
 import com.example.backend.dto.ApiResponse;
 import com.example.backend.dto.AuthResponse;
+import com.example.backend.dto.LoginRequest;
 import com.example.backend.dto.RegisterRequest;
 import com.example.backend.service.AuthService;
 import jakarta.validation.Valid;
@@ -22,5 +23,11 @@ public class AuthController {
         AuthResponse response = authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Registration successful", response));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
+        AuthResponse response = authService.login(request);
+        return ResponseEntity.ok(ApiResponse.success("Login successful", response));
     }
 }

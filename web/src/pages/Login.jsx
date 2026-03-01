@@ -5,15 +5,13 @@ import { useToast } from '../components/Toast';
 import Navbar from '../components/Navbar';
 import './Auth.css';
 
-function Register() {
+function Login() {
   const navigate = useNavigate();
   const addToast = useToast();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    fullName: '',
   });
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -27,21 +25,14 @@ function Register() {
     e.preventDefault();
     setError('');
     setFieldErrors({});
-
-    if (formData.password !== confirmPassword) {
-      setError('Passwords do not match');
-      addToast('Passwords do not match', 'error');
-      return;
-    }
-
     setLoading(true);
 
     try {
-      const response = await api.post('/auth/register', formData);
+      const response = await api.post('/auth/login', formData);
       const userData = response.data.data;
       localStorage.setItem('token', userData.token);
       localStorage.setItem('user', JSON.stringify(userData));
-      addToast('Account created successfully! Welcome to InStock 🎉', 'success');
+      addToast('Welcome back!', 'success');
       navigate('/dashboard');
     } catch (err) {
       const data = err.response?.data;
@@ -49,7 +40,7 @@ function Register() {
         setFieldErrors(data.error.details);
         addToast('Please fix the errors below', 'error');
       } else {
-        const msg = data?.message || 'Registration failed. Please try again.';
+        const msg = data?.message || 'Login failed. Please try again.';
         setError(msg);
         addToast(msg, 'error');
       }
@@ -69,32 +60,13 @@ function Register() {
         <div className="auth-card">
           <div className="auth-logo">IS</div>
           <div className="auth-header">
-            <h1>Create an account</h1>
-            <p>Start reducing food waste and discovering recipes</p>
+            <h1>Welcome back</h1>
+            <p>Sign in to your InStock account</p>
           </div>
 
           {error && <div className="error-banner">{error}</div>}
 
           <form onSubmit={handleSubmit} className="auth-form">
-            <div className="form-group">
-              <label htmlFor="fullName">Full Name</label>
-              <div className="input-wrapper">
-                <span className="input-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                </span>
-                <input
-                  id="fullName"
-                  name="fullName"
-                  type="text"
-                  placeholder="Jane Smith"
-                  value={formData.fullName}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              {fieldErrors.fullName && <span className="field-error">{fieldErrors.fullName}</span>}
-            </div>
-
             <div className="form-group">
               <label htmlFor="email">Email</label>
               <div className="input-wrapper">
@@ -115,7 +87,12 @@ function Register() {
             </div>
 
             <div className="form-group">
-              <label htmlFor="password">Password</label>
+              <div className="label-row">
+                <label htmlFor="password">Password</label>
+                <a href="#" onClick={(e) => { e.preventDefault(); addToast('Password reset coming soon!', 'info'); }}>
+                  Forgot password?
+                </a>
+              </div>
               <div className="input-wrapper">
                 <span className="input-icon">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -128,32 +105,13 @@ function Register() {
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  minLength={8}
                 />
               </div>
               {fieldErrors.password && <span className="field-error">{fieldErrors.password}</span>}
             </div>
 
-            <div className="form-group">
-              <label htmlFor="confirmPassword">Confirm Password</label>
-              <div className="input-wrapper">
-                <span className="input-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                </span>
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="••••••••"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  minLength={8}
-                />
-              </div>
-            </div>
-
             <button type="submit" className="auth-submit" disabled={loading}>
-              {loading ? 'Creating account...' : 'Create account'}
+              {loading ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
 
@@ -165,7 +123,7 @@ function Register() {
           </button>
 
           <p className="auth-footer">
-            Already have an account? <Link to="/login">Sign in</Link>
+            Don't have an account? <Link to="/register">Sign up</Link>
           </p>
         </div>
       </div>
@@ -173,4 +131,4 @@ function Register() {
   );
 }
 
-export default Register;
+export default Login;
