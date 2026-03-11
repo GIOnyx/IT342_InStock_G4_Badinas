@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
 * {
   margin: 0;
   padding: 0;
@@ -5,15 +7,26 @@
 }
 
 :root {
+  /* Fonts */
   font-family: 'Inter', 'Roboto', system-ui, -apple-system, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: #333;
+  color: #15362b;
   background-color: #f5f7f5;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Theme variables (from SDD) */
+  --color-primary: #2E7D32; /* Fresh Basil */
+  --color-secondary: #E9C46A; /* Harvest Gold */
+  --color-success: #10B981; /* Emerald */
+  --color-error: #EF4444; /* Tomato Red */
+  --bg-0: #f5f7f5;
+  --muted-1: #64748b;
+  --surface: #ffffff;
+  --card-border: #e6eef0;
 }
 
 body {
