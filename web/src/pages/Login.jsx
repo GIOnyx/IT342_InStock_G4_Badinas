@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import { useToast } from '../components/Toast';
 import Navbar from '../components/Navbar';
 import './Auth.css';
+import googleLogo from '../assets/google.svg';
 
 function Login() {
   const navigate = useNavigate();
@@ -50,81 +51,111 @@ function Login() {
   };
 
   const handleGoogleClick = () => {
-    addToast('Google sign-in coming soon!', 'info');
+    window.location.href = '/oauth2/authorization/google';
   };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    if (token) {
+      localStorage.setItem('token', token);
+      addToast('Signed in with Google', 'success');
+      window.history.replaceState({}, document.title, window.location.pathname);
+      navigate('/dashboard');
+    }
+  }, []);
 
   return (
     <div className="auth-page">
       <Navbar />
       <div className="auth-container">
-        <div className="auth-card">
-          <div className="auth-logo">IS</div>
-          <div className="auth-header">
-            <h1>Welcome back</h1>
-            <p>Sign in to your InStock account</p>
-          </div>
-
-          {error && <div className="error-banner">{error}</div>}
-
-          <form onSubmit={handleSubmit} className="auth-form">
-            <div className="form-group">
-              <label htmlFor="email">Email</label>
-              <div className="input-wrapper">
-                <span className="input-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-                </span>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                />
+        <div className="auth-shell">
+          <section className="auth-visual">
+            <div className="auth-visual-overlay" />
+            <div className="auth-visual-content">
+              <span className="auth-kicker">Smart pantry &amp; recipe discovery</span>
+              <h2>Reduce food waste, one recipe at a time.</h2>
+              <p>
+                Track what you already have, discover meals instantly, and keep your kitchen
+                organized with a cleaner cooking workflow.
+              </p>
+              <div className="auth-highlights">
+                <span>Personalized recipe suggestions</span>
+                <span>Pantry-first meal planning</span>
+                <span>Fast Google sign-in</span>
               </div>
-              {fieldErrors.email && <span className="field-error">{fieldErrors.email}</span>}
+            </div>
+          </section>
+
+          <div className="auth-card">
+            <div className="auth-logo">IS</div>
+            <div className="auth-header">
+              <h1>Welcome back</h1>
+              <p>Sign in to your InStock account</p>
             </div>
 
-            <div className="form-group">
-              <div className="label-row">
-                <label htmlFor="password">Password</label>
-                <a href="#" onClick={(e) => { e.preventDefault(); addToast('Password reset coming soon!', 'info'); }}>
-                  Forgot password?
-                </a>
-              </div>
-              <div className="input-wrapper">
-                <span className="input-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                </span>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              {fieldErrors.password && <span className="field-error">{fieldErrors.password}</span>}
-            </div>
+            {error && <div className="error-banner">{error}</div>}
 
-            <button type="submit" className="auth-submit" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign in'}
+            <form onSubmit={handleSubmit} className="auth-form">
+              <div className="form-group">
+                <label htmlFor="email">Email</label>
+                <div className="input-wrapper">
+                  <span className="input-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                  </span>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                {fieldErrors.email && <span className="field-error">{fieldErrors.email}</span>}
+              </div>
+
+              <div className="form-group">
+                <div className="label-row">
+                  <label htmlFor="password">Password</label>
+                  <a href="#" onClick={(e) => { e.preventDefault(); addToast('Password reset coming soon!', 'info'); }}>
+                    Forgot password?
+                  </a>
+                </div>
+                <div className="input-wrapper">
+                  <span className="input-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  </span>
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                {fieldErrors.password && <span className="field-error">{fieldErrors.password}</span>}
+              </div>
+
+              <button type="submit" className="auth-submit" disabled={loading}>
+                {loading ? 'Signing in...' : 'Sign in'}
+              </button>
+            </form>
+
+            <div className="auth-divider">or continue with</div>
+
+            <button type="button" className="google-btn" onClick={handleGoogleClick}>
+              <span className="google-icon"><img src={googleLogo} alt="Google" className="google-svg"/></span>
+              Continue with Google
             </button>
-          </form>
 
-          <div className="auth-divider">or continue with</div>
-
-          <button type="button" className="google-btn" onClick={handleGoogleClick}>
-            <span className="google-icon">G</span>
-            Continue with Google
-          </button>
-
-          <p className="auth-footer">
-            Don't have an account? <Link to="/register">Sign up</Link>
-          </p>
+            <p className="auth-footer">
+              Don't have an account? <Link to="/register">Sign up</Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>
