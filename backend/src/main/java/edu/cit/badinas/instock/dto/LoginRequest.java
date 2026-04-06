@@ -1,16 +1,28 @@
 package edu.cit.badinas.instock.dto;
 
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+/**
+ * Login request DTO — extended to support the Strategy Pattern.
+ *
+ * {@code authType} determines which {@code AuthenticationStrategy} is used:
+ * <ul>
+ *   <li>{@code "password"} (default) — standard email + password login</li>
+ *   <li>{@code "google"}  — Google OAuth2 ID-token login</li>
+ * </ul>
+ */
 @Data
 public class LoginRequest {
 
-    @NotBlank(message = "Email is required")
     @Email(message = "Invalid email format")
     private String email;
 
-    @NotBlank(message = "Password is required")
     private String password;
+
+    /** Authentication type: "password" (default) or "google". */
+    private String authType = "password";
+
+    /** Google ID token — required when authType is "google". */
+    private String idToken;
 }
