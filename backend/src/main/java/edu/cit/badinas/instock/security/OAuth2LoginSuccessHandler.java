@@ -1,8 +1,7 @@
 package edu.cit.badinas.instock.security;
 
-import edu.cit.badinas.instock.entity.Role;
-import edu.cit.badinas.instock.entity.User;
-import edu.cit.badinas.instock.repository.UserRepository;
+import edu.cit.badinas.instock.dto.AuthResponse;
+import edu.cit.badinas.instock.service.AuthService;
 import io.jsonwebtoken.lang.Assert;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,18 +16,34 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 
+/**
+ * Handles successful OAuth2 login redirects.
+ *
+ * <h3>Design Pattern: Facade</h3>
+ * This handler is now thin — it extracts the OAuth2 user attributes
+ * from Spring Security and immediately delegates all complex logic
+ * (user lookup/creation, JWT generation, event publishing) to
+ * {@link AuthService#authenticateOAuthUser}, which acts as the Facade.
+ *
+ * <p>Previously this class directly accessed {@code UserRepository}
+ * and {@code JwtService}; those dependencies have been removed.</p>
+ */
 @Component
 @RequiredArgsConstructor
-public class OAuth2LoginSuccessHandler implements org.springframework.security.web.authentication.AuthenticationSuccessHandler {
+public class OAuth2LoginSuccessHandler
+        implements org.springframework.security.web.authentication.AuthenticationSuccessHandler {
 
-    private final UserRepository userRepository;
-    private final JwtService jwtService;
+    private final AuthService authService;   // Facade — single dependency
 
     @Value("${app.frontend.url:http://localhost:5173}")
     private String frontendUrl;
 
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+    public void onAuthenticationSuccess(HttpServletRequest request,
+                                        HttpServletResponse response,
+                                        Authentication authentication)
+            throws IOException, ServletException {
+
         if (!(authentication instanceof OAuth2AuthenticationToken)) {
             response.sendRedirect(frontendUrl);
             return;
@@ -37,28 +52,18 @@ public class OAuth2LoginSuccessHandler implements org.springframework.security.w
         OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
         OAuth2User oauthUser = oauthToken.getPrincipal();
 
-        String email = oauthUser.getAttribute("email");
-        String name = oauthUser.getAttribute("name");
+        String email   = oauthUser.getAttribute("email");
+        String name    = oauthUser.getAttribute("name");
         String picture = oauthUser.getAttribute("picture");
 
         Assert.notNull(email, "OAuth2 provider did not supply an email");
 
-        User user = userRepository.findByEmail(email).orElseGet(() -> {
-            User u = User.builder()
-                    .email(email)
-                    .fullName(name != null ? name : email)
-                    .avatarUrl(picture)
-                    .role(Role.USER)
-                    .isVerified(true)
-                    .build();
-            return userRepository.save(u);
-        });
-
-        String token = jwtService.generateToken(user.getEmail(), user.getRole().name());
+        // ── Facade Pattern — delegate everything to AuthService ───────
+        AuthResponse authResponse = authService.authenticateOAuthUser(email, name, picture);
 
         String redirect = UriComponentsBuilder.fromUriString(frontendUrl)
-            .path("/login")
-                .queryParam("token", token)
+                .path("/login")
+                .queryParam("token", authResponse.getToken())
                 .build().toUriString();
 
         response.sendRedirect(redirect);
