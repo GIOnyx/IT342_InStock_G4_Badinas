@@ -172,6 +172,25 @@ public class AuthService {
                 .build();
     }
 
+    /**
+     * Returns the current authenticated user's profile details.
+     *
+     * @param email authenticated user's email
+     * @return profile information for the authenticated user
+     */
+    public AuthResponse getCurrentUser(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return AuthResponse.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .role(user.getRole().name())
+                .avatarUrl(user.getAvatarUrl())
+                .build();
+    }
+
     // ══════════════════════════════════════════════════════════════════
     //  Strategy Resolution
     // ══════════════════════════════════════════════════════════════════

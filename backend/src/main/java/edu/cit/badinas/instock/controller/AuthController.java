@@ -4,11 +4,14 @@ import edu.cit.badinas.instock.dto.ApiResponse;
 import edu.cit.badinas.instock.dto.AuthResponse;
 import edu.cit.badinas.instock.dto.LoginRequest;
 import edu.cit.badinas.instock.dto.RegisterRequest;
+import edu.cit.badinas.instock.entity.User;
 import edu.cit.badinas.instock.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -44,5 +47,13 @@ public class AuthController {
             @Valid @RequestBody LoginRequest request) {
         AuthResponse response = authService.login(request);
         return ResponseEntity.ok(ApiResponse.success("Login successful", response));
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<AuthResponse>> me(
+            @AuthenticationPrincipal User user) {
+        AuthResponse response = authService.getCurrentUser(user.getEmail());
+        return ResponseEntity.ok(ApiResponse.success("Current user retrieved", response));
     }
 }
