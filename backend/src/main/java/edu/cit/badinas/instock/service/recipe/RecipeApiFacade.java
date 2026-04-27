@@ -1,13 +1,21 @@
 package edu.cit.badinas.instock.service.recipe;
 
 import edu.cit.badinas.instock.dto.recipe.RecipeDTO;
+import edu.cit.badinas.instock.dto.recipe.RecipeDetailDTO;
+import edu.cit.badinas.instock.dto.recipe.SpoonacularComplexSearchResponseDTO;
+import edu.cit.badinas.instock.dto.recipe.SpoonacularInstructionGroupDTO;
+import edu.cit.badinas.instock.dto.recipe.SpoonacularInstructionStepDTO;
+import edu.cit.badinas.instock.dto.recipe.SpoonacularRecipeDetailDTO;
 import edu.cit.badinas.instock.dto.recipe.SpoonacularRecipeDTO;
+import edu.cit.badinas.instock.dto.recipe.SpoonacularSimpleRecipeDTO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Design Pattern: Facade (Structural) — for the Spoonacular subsystem.
@@ -63,4 +71,98 @@ public class RecipeApiFacade {
         // ── Adapter Pattern — convert external format → internal ─────
         return recipeAdapter.adaptList(externalRecipes);
     }
+
+        /**
+         * Searches recipes by title/name query.
+         */
+        public List<RecipeDTO> searchByRecipeTitle(String query, int number) {
+                SpoonacularComplexSearchResponseDTO external = restClient.get()
+                                .uri(uriBuilder -> uriBuilder
+                                                .path("/recipes/complexSearch")
+                                                .queryParam("query", query)
+                                                .queryParam("number", number)
+                                                .queryParam("apiKey", apiKey)
+                                                .build())
+                                .retrieve()
+                                .body(SpoonacularComplexSearchResponseDTO.class);
+
+                if (external == null || external.getResults() == null) {
+                        return List.of();
+                }
+
+                return external.getResults().stream()
+                                .map(this::mapSimpleRecipe)
+                                .collect(Collectors.toList());
+        }
+
+        private RecipeDTO mapSimpleRecipe(SpoonacularSimpleRecipeDTO source) {
+                RecipeDTO dto = new RecipeDTO();
+                dto.setRecipeId(source.getId());
+                dto.setTitle(source.getTitle());
+                dto.setImageUrl(source.getImage());
+                dto.setMatchedIngredientCount(0);
+                dto.setMissingIngredientCount(0);
+                dto.setMatchedIngredients(List.of());
+                dto.setMissingIngredients(List.of());
+                dto.setLikes(0);
+                return dto;
+        }
+
+        /**
+         * Fetches full recipe information by recipe id.
+         */
+        public RecipeDetailDTO getRecipeDetails(Long recipeId) {
+                SpoonacularRecipeDetailDTO external = restClient.get()
+                                .uri(uriBuilder -> uriBuilder
+                                                .path("/recipes/{id}/information")
+                                                .queryParam("includeNutrition", false)
+                                                .queryParam("apiKey", apiKey)
+                                                .build(recipeId))
+                                .retrieve()
+                                .body(SpoonacularRecipeDetailDTO.class);
+
+                if (external == null) {
+                        throw new RuntimeException("Recipe details not found");
+                }
+
+                RecipeDetailDTO dto = new RecipeDetailDTO();
+                dto.setRecipeId(external.getId());
+                dto.setTitle(external.getTitle());
+                dto.setImageUrl(external.getImage());
+                dto.setSummary(external.getSummary());
+                dto.setReadyInMinutes(external.getReadyInMinutes());
+                dto.setServings(external.getServings());
+                dto.setSourceUrl(external.getSourceUrl());
+
+                List<String> ingredients = external.getExtendedIngredients() == null
+                                ? List.of()
+                                : external.getExtendedIngredients().stream()
+                                .map(ingredient -> ingredient.getOriginal() == null ? ingredient.getName() : ingredient.getOriginal())
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toList());
+                dto.setIngredients(ingredients);
+
+                List<String> instructions = extractInstructionSteps(external);
+                dto.setInstructions(instructions);
+
+                return dto;
+        }
+
+        private List<String> extractInstructionSteps(SpoonacularRecipeDetailDTO external) {
+                if (external.getAnalyzedInstructions() != null && !external.getAnalyzedInstructions().isEmpty()) {
+                        return external.getAnalyzedInstructions().stream()
+                                        .map(SpoonacularInstructionGroupDTO::getSteps)
+                                        .filter(Objects::nonNull)
+                                        .flatMap(List::stream)
+                                        .map(SpoonacularInstructionStepDTO::getStep)
+                                        .filter(Objects::nonNull)
+                                        .collect(Collectors.toList());
+                }
+
+                if (external.getInstructions() != null && !external.getInstructions().isBlank()) {
+                        return List.of(external.getInstructions());
+                }
+
+                return List.of();
+        }
 }
