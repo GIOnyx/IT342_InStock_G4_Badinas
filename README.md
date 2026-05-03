@@ -1,6 +1,6 @@
 # InStock - Recipe Suggestion & Food Waste Reduction App
 
-**Prepared By:** Gregory Ivan Onyx M. Badinas (DSIT-3, IT342-64)  
+**Prepared By:** Gregory Ivan Onyx M. Badinas (BSIT-3, IT342-G4)  
 **Domain:** Cooking  
 **Primary Users:** General Public  
 
