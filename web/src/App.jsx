@@ -1,14 +1,14 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import Landing from './pages/Landing';
-import PrivateRoute from './components/PrivateRoute';
-import DashboardShell from './components/DashboardShell';
-import OverviewPage from './pages/OverviewPage';
-import PantryPage from './pages/PantryPage';
-import RecipesPage from './pages/RecipesPage';
-import FavoritesPage from './pages/FavoritesPage';
-import ProfilePage from './pages/ProfilePage';
-import SettingsPage from './pages/SettingsPage';
-import RecipeDetailPage from './pages/RecipeDetailPage';
+import Landing from './features/landing/Landing';
+import PrivateRoute from './core/components/PrivateRoute';
+import DashboardShell from './core/components/DashboardShell';
+import OverviewPage from './features/dashboard/OverviewPage';
+import PantryPage from './features/pantry/PantryPage';
+import RecipesPage from './features/recipes/RecipesPage';
+import FavoritesPage from './features/favorites/FavoritesPage';
+import ProfilePage from './features/profile/ProfilePage';
+import SettingsPage from './features/profile/SettingsPage';
+import RecipeDetailPage from './features/recipes/RecipeDetailPage';
 
 function SmartRedirect() {
   const token = localStorage.getItem('token');
