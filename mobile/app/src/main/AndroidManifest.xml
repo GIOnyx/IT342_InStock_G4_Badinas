@@ -17,28 +17,28 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
         <activity
-            android:name=".RegisterActivity"
+            android:name=".features.auth.RegisterActivity"
             android:exported="false" />
         <activity
-            android:name=".SettingsActivity"
+            android:name=".features.profile.SettingsActivity"
             android:exported="false" />
         <activity
-            android:name=".ProfileActivity"
+            android:name=".features.profile.ProfileActivity"
             android:exported="false" />
         <activity
-            android:name=".FavoritesActivity"
+            android:name=".features.favorites.FavoritesActivity"
             android:exported="false" />
         <activity
-            android:name=".RecipesActivity"
+            android:name=".features.recipes.RecipesActivity"
             android:exported="false" />
         <activity
-            android:name=".PantryActivity"
+            android:name=".features.pantry.PantryActivity"
             android:exported="false" />
         <activity
-            android:name=".DashboardActivity"
+            android:name=".core.navigation.DashboardActivity"
             android:exported="false" />
         <activity
-            android:name=".LoginActivity"
+            android:name=".features.auth.LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -47,7 +47,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".MainActivity"
+            android:name=".core.navigation.MainActivity"
             android:exported="false" />
     </application>
 
