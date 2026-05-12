@@ -10,14 +10,21 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
     private final String fromAddress;
+    private final String mailHost;
 
     public EmailService(JavaMailSender mailSender,
-                        @Value("${spring.mail.username}") String fromAddress) {
+                        @Value("${spring.mail.username:}") String fromAddress,
+                        @Value("${spring.mail.host:}") String mailHost) {
         this.mailSender = mailSender;
         this.fromAddress = fromAddress;
+        this.mailHost = mailHost;
     }
 
     public void sendWelcomeEmail(String toAddress) {
+        if (mailHost == null || mailHost.isBlank() || "smtp.example.com".equalsIgnoreCase(mailHost)) {
+            return;
+        }
+
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromAddress);
         message.setTo(toAddress);

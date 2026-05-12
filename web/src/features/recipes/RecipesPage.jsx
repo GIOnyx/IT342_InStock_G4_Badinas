@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import api from '../../core/services/api';
 import { useToast } from '../../core/components/Toast';
+import { getWebSettings } from '../../core/services/settings';
 
 const PREFILL_STORAGE_KEY = 'instock_prefill_ingredients';
 const OVERVIEW_STATS_KEY = 'instock_overview_stats';
+const FAVORITES_CACHE_KEY = 'instock_favorites_cache';
 const RECIPE_SUGGESTIONS = [
   'butter chicken',
   'chicken adobo',
@@ -23,8 +25,9 @@ function RecipesPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const addToast = useToast();
+  const [webSettings, setWebSettings] = useState(() => getWebSettings());
   const [ingredientsInput, setIngredientsInput] = useState('');
-  const [maxResults, setMaxResults] = useState(10);
+  const [maxResults, setMaxResults] = useState(() => getWebSettings().defaultRecipeLimit);
   const [recipes, setRecipes] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -35,25 +38,15 @@ function RecipesPage() {
   const hasProcessedPrefillRef = useRef(false);
   const hasLoadedFavoritesRef = useRef(false);
 
-  const parsedIngredients = useMemo(() => {
-    const unique = new Set();
-    return ingredientsInput
-      .split(',')
-      .map((item) => item.trim())
-      .filter((item) => item.length > 0)
-      .filter((item) => {
-        const key = item.toLowerCase();
-        if (unique.has(key)) {
-          return false;
-        }
-        unique.add(key);
-        return true;
-      });
-  }, [ingredientsInput]);
-
   const favoriteExternalIds = useMemo(() => new Set(favorites.map((item) => item.externalRecipeId)), [favorites]);
 
   const updateSuggestions = (value) => {
+    if (!webSettings.autocompleteEnabled) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
     const q = value.trim().toLowerCase();
     if (!q) {
       setSuggestions([]);
@@ -78,7 +71,7 @@ function RecipesPage() {
     return url.replace(/(\d+)x(\d+)/, '636x393');
   };
 
-  const runSearch = async (ingredientsList = []) => {
+  const runSearch = useCallback(async (ingredientsList = []) => {
     const query = ingredientsInput.trim();
     const hasBackgroundIngredients = ingredientsList.length > 0;
 
@@ -87,6 +80,12 @@ function RecipesPage() {
       return;
     }
 
+    // Read allergens fresh from settings each search so they're always current
+    const currentSettings = getWebSettings();
+    const intolerances = currentSettings.allergens?.length
+      ? currentSettings.allergens.join(',')
+      : undefined;
+
     setLoading(true);
     try {
       const response = hasBackgroundIngredients
@@ -94,12 +93,14 @@ function RecipesPage() {
           params: {
             ingredients: ingredientsList.join(','),
             number: maxResults,
+            ...(intolerances && { intolerances }),
           },
         })
         : await api.get('/recipes/search-by-name', {
           params: {
             query,
             number: maxResults,
+            ...(intolerances && { intolerances }),
           },
         });
 
@@ -108,17 +109,39 @@ function RecipesPage() {
         pantryCount: Number(JSON.parse(localStorage.getItem(OVERVIEW_STATS_KEY) || '{}')?.pantryCount || 0),
         favoritesCount: favorites.length,
       }));
-      addToast('Recipes loaded.', 'success');
+      if (intolerances) {
+        addToast(`Recipes filtered — excluding: ${intolerances}.`, 'info');
+      } else {
+        addToast('Recipes loaded.', 'success');
+      }
     } catch {
       addToast('Unable to load recipes.', 'error');
     } finally {
       setLoading(false);
     }
-  };
+  }, [addToast, favorites.length, ingredientsInput, maxResults]);
 
   const handleSearch = async () => {
     await runSearch(isPantryPrefillMode ? backgroundPantryIngredients : []);
   };
+
+  useEffect(() => {
+    const handleSettingsChange = (event) => {
+      const nextSettings = event.detail || getWebSettings();
+      setWebSettings(nextSettings);
+      setMaxResults((current) => (
+        current === webSettings.defaultRecipeLimit ? nextSettings.defaultRecipeLimit : current
+      ));
+
+      if (!nextSettings.autocompleteEnabled) {
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
+    };
+
+    window.addEventListener('instock-settings-change', handleSettingsChange);
+    return () => window.removeEventListener('instock-settings-change', handleSettingsChange);
+  }, [webSettings.defaultRecipeLimit]);
 
   useEffect(() => {
     if (hasProcessedPrefillRef.current) {
@@ -151,7 +174,7 @@ function RecipesPage() {
       runSearch(prefill);
       localStorage.removeItem(PREFILL_STORAGE_KEY);
     }
-  }, []);
+  }, [location.state?.pantryIngredients, runSearch]);
 
   useEffect(() => {
     if (hasLoadedFavoritesRef.current) {
@@ -193,7 +216,12 @@ function RecipesPage() {
       });
       const saved = response.data?.data;
       if (saved) {
-        setFavorites((prev) => [saved, ...prev]);
+        setFavorites((prev) => {
+          const next = [saved, ...prev];
+          // Keep favorites cache in sync
+          localStorage.setItem(FAVORITES_CACHE_KEY, JSON.stringify(next));
+          return next;
+        });
         const overview = JSON.parse(localStorage.getItem(OVERVIEW_STATS_KEY) || '{}');
         localStorage.setItem(OVERVIEW_STATS_KEY, JSON.stringify({
           pantryCount: Number(overview.pantryCount || 0),
@@ -215,6 +243,12 @@ function RecipesPage() {
       <header className="dashboard-header">
         <h1>Recipe Finder</h1>
         <p>Search and save recipes using recipe keywords or ingredient terms.</p>
+        {webSettings.allergens?.length > 0 && (
+          <p className="allergen-filter-badge">
+            🚫 Excluding: <strong>{webSettings.allergens.join(', ')}</strong>
+            <span className="allergen-filter-hint"> — manage in Settings</span>
+          </p>
+        )}
       </header>
 
       <section className="dash-card">
@@ -259,7 +293,7 @@ function RecipesPage() {
             <div className="helper-text">
               {isPantryPrefillMode
                 ? `Using ${backgroundPantryIngredients.length} pantry ingredient(s) in the background`
-                : 'Recipe title search mode'}
+                : webSettings.autocompleteEnabled ? 'Recipe title search mode' : 'Recipe title search mode, autocomplete off'}
             </div>
           </div>
 

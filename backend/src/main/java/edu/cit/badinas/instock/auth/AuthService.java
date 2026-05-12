@@ -5,6 +5,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import edu.cit.badinas.instock.auth.event.UserRegisteredEvent;
 import edu.cit.badinas.instock.auth.security.JwtService;
@@ -94,6 +95,7 @@ public class AuthService {
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .role(user.getRole().name())
+                .avatarUrl(user.getAvatarUrl())   // fix: include avatarUrl on register
                 .token(token)
                 .build();
     }
@@ -179,6 +181,38 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        return toAuthResponse(user);
+    }
+
+    @Transactional
+    public AuthResponse updateCurrentUser(String email, UpdateProfileRequest request) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setFullName(request.getFullName().trim());
+        User savedUser = userRepository.save(user);
+        return toAuthResponse(savedUser);
+    }
+
+    @Transactional
+    public AuthResponse changePassword(String email, ChangePasswordRequest request) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()) {
+            throw new RuntimeException("Password changes are only available for password-based accounts");
+        }
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+            throw new RuntimeException("Current password is incorrect");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        User savedUser = userRepository.save(user);
+        return toAuthResponse(savedUser);
+    }
+
+    private AuthResponse toAuthResponse(User user) {
         return AuthResponse.builder()
                 .id(user.getId())
                 .email(user.getEmail())

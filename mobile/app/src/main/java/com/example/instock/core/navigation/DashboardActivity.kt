@@ -13,11 +13,7 @@ import com.example.instock.features.auth.LoginActivity
 
 class DashboardActivity : AppCompatActivity() {
 
-    private lateinit var contentContainer: View
-    private lateinit var pageTitle: TextView
-    private lateinit var pageSubtitle: TextView
-    private lateinit var featureTitle: TextView
-    private lateinit var featureBody: TextView
+
 
     private lateinit var iconSettings: ImageView
     private lateinit var iconRecipes: ImageView
@@ -54,12 +50,6 @@ class DashboardActivity : AppCompatActivity() {
 
         email = intent.getStringExtra(EXTRA_EMAIL).orEmpty()
 
-        contentContainer = findViewById(R.id.contentContainer)
-        pageTitle = findViewById(R.id.pageTitle)
-        pageSubtitle = findViewById(R.id.pageSubtitle)
-        featureTitle = findViewById(R.id.featureTitle)
-        featureBody = findViewById(R.id.featureBody)
-
         iconSettings = findViewById(R.id.iconSettings)
         iconRecipes = findViewById(R.id.iconRecipes)
         iconPantry = findViewById(R.id.iconPantry)
@@ -82,77 +72,34 @@ class DashboardActivity : AppCompatActivity() {
             logoutAndTerminateSession()
         }
 
-        findViewById<View>(R.id.navSettings).setOnClickListener { switchTab(Tab.SETTINGS, true) }
-        findViewById<View>(R.id.navRecipes).setOnClickListener { switchTab(Tab.RECIPES, true) }
-        findViewById<View>(R.id.navPantry).setOnClickListener { switchTab(Tab.PANTRY, true) }
-        findViewById<View>(R.id.navFavorites).setOnClickListener { switchTab(Tab.FAVORITES, true) }
-        findViewById<View>(R.id.navProfile).setOnClickListener { switchTab(Tab.PROFILE, true) }
+        findViewById<View>(R.id.navSettings).setOnClickListener { switchTab(Tab.SETTINGS) }
+        findViewById<View>(R.id.navRecipes).setOnClickListener { switchTab(Tab.RECIPES) }
+        findViewById<View>(R.id.navPantry).setOnClickListener { switchTab(Tab.PANTRY) }
+        findViewById<View>(R.id.navFavorites).setOnClickListener { switchTab(Tab.FAVORITES) }
+        findViewById<View>(R.id.navProfile).setOnClickListener { switchTab(Tab.PROFILE) }
 
-        switchTab(Tab.PANTRY, false)
+        if (savedInstanceState == null) {
+            switchTab(Tab.PANTRY)
+        }
     }
 
-    private fun switchTab(tab: Tab, animated: Boolean) {
+    private fun switchTab(tab: Tab) {
         if (currentTab == tab) return
 
-        if (!animated || currentTab == null) {
-            updateTabContent(tab)
-            applyFooterState(tab)
-            currentTab = tab
-            return
+        val fragment = when (tab) {
+            Tab.PANTRY -> com.example.instock.features.pantry.PantryFragment.newInstance()
+            Tab.RECIPES -> com.example.instock.features.recipes.RecipesFragment.newInstance()
+            Tab.FAVORITES -> com.example.instock.features.recipes.FavoritesFragment.newInstance()
+            Tab.SETTINGS -> com.example.instock.features.profile.SettingsFragment.newInstance()
+            Tab.PROFILE -> com.example.instock.features.profile.ProfileFragment.newInstance()
         }
 
-        contentContainer.animate()
-            .alpha(0f)
-            .translationY(16f)
-            .setDuration(110)
-            .withEndAction {
-                updateTabContent(tab)
-                applyFooterState(tab)
-                currentTab = tab
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragmentContainer, fragment)
+            .commit()
 
-                contentContainer.translationY = -12f
-                contentContainer.animate()
-                    .alpha(1f)
-                    .translationY(0f)
-                    .setDuration(170)
-                    .start()
-            }
-            .start()
-    }
-
-    private fun updateTabContent(tab: Tab) {
-        when (tab) {
-            Tab.PANTRY -> {
-                pageTitle.text = getString(R.string.pantry_title)
-                pageSubtitle.text = getString(R.string.dashboard_subtitle, email)
-                featureTitle.text = getString(R.string.dashboard_inventory_title)
-                featureBody.text = getString(R.string.dashboard_inventory_text)
-            }
-            Tab.SETTINGS -> {
-                pageTitle.text = getString(R.string.settings_title)
-                pageSubtitle.text = getString(R.string.settings_subtitle)
-                featureTitle.text = getString(R.string.settings_feature_title)
-                featureBody.text = getString(R.string.settings_feature_text)
-            }
-            Tab.RECIPES -> {
-                pageTitle.text = getString(R.string.recipes_title)
-                pageSubtitle.text = getString(R.string.recipes_subtitle)
-                featureTitle.text = getString(R.string.dashboard_recipe_title)
-                featureBody.text = getString(R.string.dashboard_recipe_text)
-            }
-            Tab.FAVORITES -> {
-                pageTitle.text = getString(R.string.favorites_title)
-                pageSubtitle.text = getString(R.string.favorites_subtitle)
-                featureTitle.text = getString(R.string.favorites_feature_title)
-                featureBody.text = getString(R.string.favorites_feature_text)
-            }
-            Tab.PROFILE -> {
-                pageTitle.text = getString(R.string.profile_title)
-                pageSubtitle.text = getString(R.string.profile_subtitle)
-                featureTitle.text = getString(R.string.profile_feature_title)
-                featureBody.text = getString(R.string.profile_feature_text)
-            }
-        }
+        applyFooterState(tab)
+        currentTab = tab
     }
 
     private fun applyFooterState(tab: Tab) {
@@ -206,6 +153,8 @@ class DashboardActivity : AppCompatActivity() {
     private fun logoutAndTerminateSession() {
         getSharedPreferences("instock_session", MODE_PRIVATE).edit().clear().apply()
         getSharedPreferences("auth", MODE_PRIVATE).edit().clear().apply()
+        com.example.instock.core.network.AllergenPrefs.clear()
+        com.example.instock.core.network.OfflineCache.clear()
 
         val intent = Intent(this, LoginActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)

@@ -11,3 +11,27 @@ data class LoginRequest(
     val password: String,
     val authType: String = "password"
 )
+
+data class AuthResponse(
+    val id: Long,
+    val email: String,
+    val fullName: String,
+    val role: String,
+    val avatarUrl: String?,
+    val token: String?
+)
+
+data class AuthMeResponse(
+    val success: Boolean,
+    val message: String,
+    val data: AuthResponse
+)
+
+data class UpdateProfileRequest(
+    val fullName: String
+)
+
+data class ChangePasswordRequest(
+    val currentPassword: String,
+    val newPassword: String
+)

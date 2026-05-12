@@ -14,8 +14,11 @@ object ApiClient {
         level = HttpLoggingInterceptor.Level.BODY
     }
 
+    private val authInterceptor = AuthInterceptor()
+
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor(loggingInterceptor)
+        .addInterceptor(authInterceptor)
         .build()
 
     val authApi: AuthApiService by lazy {
@@ -25,5 +28,32 @@ object ApiClient {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(AuthApiService::class.java)
+    }
+
+    val pantryApi: com.example.instock.features.pantry.PantryApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(com.example.instock.features.pantry.PantryApiService::class.java)
+    }
+
+    val recipeApi: com.example.instock.features.recipes.RecipeApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(com.example.instock.features.recipes.RecipeApiService::class.java)
+    }
+
+    val favoriteApi: com.example.instock.features.recipes.FavoriteApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(com.example.instock.features.recipes.FavoriteApiService::class.java)
     }
 }

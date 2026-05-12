@@ -3,7 +3,9 @@ package com.example.instock.features.auth
 import com.google.gson.JsonObject
 import retrofit2.Call
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 
 interface AuthApiService {
     @POST("api/v1/auth/register")
@@ -11,4 +13,13 @@ interface AuthApiService {
 
     @POST("api/v1/auth/login")
     fun login(@Body request: LoginRequest): Call<JsonObject>
+
+    @GET("api/v1/auth/me")
+    fun getMe(): Call<AuthMeResponse>
+
+    @PUT("api/v1/auth/me")
+    fun updateMe(@Body request: UpdateProfileRequest): Call<AuthMeResponse>
+
+    @PUT("api/v1/auth/me/password")
+    fun changePassword(@Body request: ChangePasswordRequest): Call<AuthMeResponse>
 }

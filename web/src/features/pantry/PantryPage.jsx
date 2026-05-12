@@ -4,6 +4,7 @@ import api, { updatePantryItem } from '../../core/services/api';
 import { useToast } from '../../core/components/Toast';
 
 const OVERVIEW_STATS_KEY = 'instock_overview_stats';
+const PANTRY_CACHE_KEY = 'instock_pantry_cache';
 
 const INGREDIENT_LIBRARY = [
   'apple', 'banana', 'beef', 'bell pepper', 'broccoli', 'butter', 'cabbage', 'carrot', 'cauliflower', 'cheese',
@@ -17,7 +18,16 @@ function PantryPage() {
   const navigate = useNavigate();
   const addToast = useToast();
   const [user] = useState(() => JSON.parse(localStorage.getItem('user') || '{}'));
-  const [pantryItems, setPantryItems] = useState([]);
+  const [pantryItems, setPantryItems] = useState(() => {
+    // Seed from cache immediately so the list renders before the network call
+    try {
+      const cached = localStorage.getItem(PANTRY_CACHE_KEY);
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [isOffline, setIsOffline] = useState(false);
   const [name, setName] = useState('');
   const [editingItemId, setEditingItemId] = useState(null);
   const [editingName, setEditingName] = useState('');
@@ -36,6 +46,10 @@ function PantryPage() {
       const response = await api.get('/stock');
       const items = response.data?.data || [];
       setPantryItems(items);
+      setIsOffline(false);
+
+      // Persist to cache for offline use
+      localStorage.setItem(PANTRY_CACHE_KEY, JSON.stringify(items));
 
       const overview = JSON.parse(localStorage.getItem(OVERVIEW_STATS_KEY) || '{}');
       localStorage.setItem(OVERVIEW_STATS_KEY, JSON.stringify({
@@ -43,7 +57,18 @@ function PantryPage() {
         favoritesCount: Number(overview.favoritesCount || 0),
       }));
     } catch {
-      addToast('Unable to load pantry.', 'error');
+      // Network failed — serve from cache silently
+      const cached = localStorage.getItem(PANTRY_CACHE_KEY);
+      if (cached) {
+        try {
+          setPantryItems(JSON.parse(cached));
+          setIsOffline(true);
+        } catch {
+          // Cache corrupted — ignore
+        }
+      } else {
+        addToast('Unable to load pantry.', 'error');
+      }
     }
   };
 
@@ -188,6 +213,11 @@ function PantryPage() {
       <header className="dashboard-header">
         <h1>My Pantry</h1>
         <p>Manage ingredients stored in your account.</p>
+        {isOffline && (
+          <p className="offline-banner">
+            📶 Offline — showing cached pantry. Changes require a connection.
+          </p>
+        )}
       </header>
 
       <section className="dash-card">

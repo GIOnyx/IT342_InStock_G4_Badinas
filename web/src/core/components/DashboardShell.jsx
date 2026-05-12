@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import api from '../services/api';
+import { applyWebSettings, getWebSettings } from '../services/settings';
 import './DashboardShell.css';
 
 const NAV_ITEMS = [
@@ -15,6 +16,27 @@ const NAV_ITEMS = [
 function DashboardShell() {
   const navigate = useNavigate();
   const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('user') || '{}'));
+
+  useEffect(() => {
+    applyWebSettings(getWebSettings());
+
+    const handleSettingsChange = (event) => {
+      applyWebSettings(event.detail || getWebSettings());
+    };
+
+    const handleUserChange = (event) => {
+      if (event.detail) {
+        setUser(event.detail);
+      }
+    };
+
+    window.addEventListener('instock-settings-change', handleSettingsChange);
+    window.addEventListener('instock-user-change', handleUserChange);
+    return () => {
+      window.removeEventListener('instock-settings-change', handleSettingsChange);
+      window.removeEventListener('instock-user-change', handleUserChange);
+    };
+  }, []);
 
   useEffect(() => {
     const loadCurrentUser = async () => {
