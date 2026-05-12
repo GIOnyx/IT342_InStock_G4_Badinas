@@ -28,16 +28,18 @@ public class RecipeController {
      *
      * @param ingredients comma-separated ingredient names (e.g. "chicken,rice,tomato")
      * @param number      max results to return (default 10, max 100)
+     * @param intolerances optional comma-separated Spoonacular intolerances (e.g. "gluten,dairy")
      * @return list of matched recipes in the internal {@link RecipeDTO} format
      *
-     * <p>Example: {@code GET /api/v1/recipes/search?ingredients=chicken,rice&number=5}</p>
+     * <p>Example: {@code GET /api/v1/recipes/search?ingredients=chicken,rice&number=5&intolerances=gluten}</p>
      */
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<List<RecipeDTO>>> searchByIngredients(
             @RequestParam String ingredients,
-            @RequestParam(defaultValue = "10") int number) {
+            @RequestParam(defaultValue = "10") int number,
+            @RequestParam(required = false) String intolerances) {
 
-        List<RecipeDTO> recipes = recipeApiFacade.searchByIngredients(ingredients, number);
+        List<RecipeDTO> recipes = recipeApiFacade.searchByIngredients(ingredients, number, intolerances);
 
         return ResponseEntity.ok(
                 ApiResponse.success("Found " + recipes.size() + " recipes", recipes));
@@ -46,9 +48,10 @@ public class RecipeController {
     @GetMapping("/search-by-name")
     public ResponseEntity<ApiResponse<List<RecipeDTO>>> searchByRecipeName(
             @RequestParam String query,
-            @RequestParam(defaultValue = "10") int number) {
+            @RequestParam(defaultValue = "10") int number,
+            @RequestParam(required = false) String intolerances) {
 
-        List<RecipeDTO> recipes = recipeApiFacade.searchByRecipeTitle(query, number);
+        List<RecipeDTO> recipes = recipeApiFacade.searchByRecipeTitle(query, number, intolerances);
         return ResponseEntity.ok(
                 ApiResponse.success("Found " + recipes.size() + " recipes", recipes));
     }

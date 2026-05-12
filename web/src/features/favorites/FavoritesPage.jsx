@@ -4,11 +4,21 @@ import api from '../../core/services/api';
 import { useToast } from '../../core/components/Toast';
 
 const OVERVIEW_STATS_KEY = 'instock_overview_stats';
+const FAVORITES_CACHE_KEY = 'instock_favorites_cache';
 
 function FavoritesPage() {
   const navigate = useNavigate();
   const addToast = useToast();
-  const [favorites, setFavorites] = useState([]);
+  const [isOffline, setIsOffline] = useState(false);
+  const [favorites, setFavorites] = useState(() => {
+    // Seed from cache so the list renders before the network call
+    try {
+      const cached = localStorage.getItem(FAVORITES_CACHE_KEY);
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
 
   const highResImage = (url) => {
     if (!url) {
@@ -20,9 +30,24 @@ function FavoritesPage() {
   const loadFavorites = async () => {
     try {
       const response = await api.get('/favorites');
-      setFavorites(response.data?.data || []);
+      const items = response.data?.data || [];
+      setFavorites(items);
+      setIsOffline(false);
+      // Persist to cache for offline use
+      localStorage.setItem(FAVORITES_CACHE_KEY, JSON.stringify(items));
     } catch {
-      addToast('Unable to load favorites.', 'error');
+      // Network failed — serve from cache silently
+      const cached = localStorage.getItem(FAVORITES_CACHE_KEY);
+      if (cached) {
+        try {
+          setFavorites(JSON.parse(cached));
+          setIsOffline(true);
+        } catch {
+          // Cache corrupted — ignore
+        }
+      } else {
+        addToast('Unable to load favorites.', 'error');
+      }
     }
   };
 
@@ -35,7 +60,11 @@ function FavoritesPage() {
   const removeFavorite = async (id) => {
     try {
       await api.delete(`/favorites/${id}`);
-      setFavorites((prev) => prev.filter((item) => item.id !== id));
+      setFavorites((prev) => {
+        const next = prev.filter((item) => item.id !== id);
+        localStorage.setItem(FAVORITES_CACHE_KEY, JSON.stringify(next));
+        return next;
+      });
       const overview = JSON.parse(localStorage.getItem(OVERVIEW_STATS_KEY) || '{}');
       localStorage.setItem(OVERVIEW_STATS_KEY, JSON.stringify({
         pantryCount: Number(overview.pantryCount || 0),
@@ -52,6 +81,11 @@ function FavoritesPage() {
       <header className="dashboard-header">
         <h1>Favorites</h1>
         <p>Your saved recipes from the database.</p>
+        {isOffline && (
+          <p className="offline-banner">
+            📶 Offline — showing cached favorites.
+          </p>
+        )}
       </header>
 
       <section className="dash-card">

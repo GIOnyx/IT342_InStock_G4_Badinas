@@ -50,4 +50,11 @@
     <string name="favorites_feature_title">Saved recipes</string>
     <string name="favorites_feature_text">Quickly revisit your favorite meals and pantry plans.</string>
     <string name="logout_content_description">Log out</string>
+
+    <string-array name="recipe_limit_options">
+        <item>5 items</item>
+        <item>10 items</item>
+        <item>20 items</item>
+        <item>50 items</item>
+    </string-array>
 </resources>

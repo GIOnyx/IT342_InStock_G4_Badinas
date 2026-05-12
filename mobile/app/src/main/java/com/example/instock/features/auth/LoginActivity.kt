@@ -68,6 +68,12 @@ class LoginActivity : AppCompatActivity() {
                     setLoading(false)
 
                     if (response.isSuccessful) {
+                        val body = response.body()
+                        val token = body?.get("token")?.asString.orEmpty()
+                        if (token.isNotEmpty()) {
+                            com.example.instock.core.network.TokenManager.saveToken(token)
+                        }
+
                         Toast.makeText(this@LoginActivity, getString(R.string.login_success), Toast.LENGTH_SHORT).show()
                         val intent = Intent(this@LoginActivity, DashboardActivity::class.java)
                         intent.putExtra(DashboardActivity.EXTRA_EMAIL, email)

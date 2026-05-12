@@ -34,6 +34,8 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v1/auth/**").permitAll()
+                // Avatar images must be publicly accessible (no JWT required)
+                .requestMatchers("/uploads/**").permitAll()
                 .anyRequest().authenticated()
             )
             .oauth2Login(oauth -> oauth.successHandler(oauth2LoginSuccessHandler))

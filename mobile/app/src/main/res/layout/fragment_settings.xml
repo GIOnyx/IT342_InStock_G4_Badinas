@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_title"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="24dp" />
+
+        <!-- ── Change Password ──────────────────────────────────── -->
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Change Password"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="12dp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etCurrentPassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Current Password"
+                android:inputType="textPassword" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etNewPassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="New Password"
+                android:inputType="textPassword" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etConfirmPassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Confirm New Password"
+                android:inputType="textPassword" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnChangePassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Change Password" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="24dp"
+            android:background="@color/brand_text_muted" />
+
+        <!-- ── App Preferences ─────────────────────────────────── -->
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="App Preferences"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="12dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Max Recipes Limit"
+                android:textSize="16sp" />
+
+            <Spinner
+                android:id="@+id/spinnerLimit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="24dp"
+            android:background="@color/brand_text_muted" />
+
+        <!-- ── Dietary Preferences (AC-4) ──────────────────────── -->
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Dietary Preferences"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Select allergens to exclude from recipe searches."
+            android:textSize="13sp"
+            android:textColor="@color/brand_text_muted"
+            android:layout_marginBottom="12dp" />
+
+        <CheckBox android:id="@+id/cbDairy"       android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Dairy"     android:textSize="15sp" android:layout_marginBottom="4dp" />
+        <CheckBox android:id="@+id/cbEgg"         android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Egg"       android:textSize="15sp" android:layout_marginBottom="4dp" />
+        <CheckBox android:id="@+id/cbGluten"      android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Gluten"    android:textSize="15sp" android:layout_marginBottom="4dp" />
+        <CheckBox android:id="@+id/cbGrain"       android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Grain"     android:textSize="15sp" android:layout_marginBottom="4dp" />
+        <CheckBox android:id="@+id/cbPeanut"      android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Peanut"    android:textSize="15sp" android:layout_marginBottom="4dp" />
+        <CheckBox android:id="@+id/cbSeafood"     android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Seafood"   android:textSize="15sp" android:layout_marginBottom="4dp" />
+        <CheckBox android:id="@+id/cbSesame"      android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Sesame"    android:textSize="15sp" android:layout_marginBottom="4dp" />
+        <CheckBox android:id="@+id/cbShellfish"   android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Shellfish" android:textSize="15sp" android:layout_marginBottom="4dp" />
+        <CheckBox android:id="@+id/cbSoy"         android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Soy"       android:textSize="15sp" android:layout_marginBottom="4dp" />
+        <CheckBox android:id="@+id/cbSulfite"     android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Sulfite"   android:textSize="15sp" android:layout_marginBottom="4dp" />
+        <CheckBox android:id="@+id/cbTreeNut"     android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Tree Nut"  android:textSize="15sp" android:layout_marginBottom="4dp" />
+        <CheckBox android:id="@+id/cbWheat"       android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Wheat"     android:textSize="15sp" android:layout_marginBottom="16dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSaveAllergens"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Save Dietary Preferences" />
+
+    </LinearLayout>
+</ScrollView>

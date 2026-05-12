@@ -50,12 +50,36 @@ public class RecipeApiFacade {
     /**
      * Searches for recipes that can be made with the given ingredients.
      *
-     * @param ingredients comma-separated ingredient names (e.g. "chicken,rice,tomato")
-     * @param number      maximum number of results to return (default 10)
+     * @param ingredients  comma-separated ingredient names (e.g. "chicken,rice,tomato")
+     * @param number       maximum number of results to return (default 10)
+     * @param intolerances optional comma-separated Spoonacular intolerances (e.g. "gluten,dairy")
      * @return a list of {@link RecipeDTO} in the application's internal format
      */
-    public List<RecipeDTO> searchByIngredients(String ingredients, int number) {
-        // ── Call the Spoonacular API ──────────────────────────────────
+    public List<RecipeDTO> searchByIngredients(String ingredients, int number, String intolerances) {
+        // findByIngredients doesn't support intolerances directly — we use complexSearch
+        // with ingredientList so we can apply the intolerances filter.
+        if (intolerances != null && !intolerances.isBlank()) {
+            SpoonacularComplexSearchResponseDTO external = restClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/recipes/complexSearch")
+                            .queryParam("includeIngredients", ingredients)
+                            .queryParam("number", number)
+                            .queryParam("intolerances", intolerances)
+                            .queryParam("ranking", 1)
+                            .queryParam("apiKey", apiKey)
+                            .build())
+                    .retrieve()
+                    .body(SpoonacularComplexSearchResponseDTO.class);
+
+            if (external == null || external.getResults() == null) {
+                return List.of();
+            }
+            return external.getResults().stream()
+                    .map(this::mapSimpleRecipe)
+                    .collect(Collectors.toList());
+        }
+
+        // No intolerances — use the faster findByIngredients endpoint
         List<SpoonacularRecipeDTO> externalRecipes = restClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/recipes/findByIngredients")
@@ -74,15 +98,22 @@ public class RecipeApiFacade {
 
     /**
      * Searches recipes by title/name query.
+     *
+     * @param intolerances optional comma-separated Spoonacular intolerances
      */
-    public List<RecipeDTO> searchByRecipeTitle(String query, int number) {
+    public List<RecipeDTO> searchByRecipeTitle(String query, int number, String intolerances) {
         SpoonacularComplexSearchResponseDTO external = restClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/recipes/complexSearch")
-                        .queryParam("query", query)
-                        .queryParam("number", number)
-                        .queryParam("apiKey", apiKey)
-                        .build())
+                .uri(uriBuilder -> {
+                    var builder = uriBuilder
+                            .path("/recipes/complexSearch")
+                            .queryParam("query", query)
+                            .queryParam("number", number)
+                            .queryParam("apiKey", apiKey);
+                    if (intolerances != null && !intolerances.isBlank()) {
+                        builder = builder.queryParam("intolerances", intolerances);
+                    }
+                    return builder.build();
+                })
                 .retrieve()
                 .body(SpoonacularComplexSearchResponseDTO.class);
 

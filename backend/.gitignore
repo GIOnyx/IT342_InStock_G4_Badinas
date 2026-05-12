@@ -1,8 +1,14 @@
 HELP.md
 target/
+.data/
+data/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+
+### Environment Variables (sensitive data) ###
+.env
+.env.local
 
 ### Application Properties (sensitive data) ###
 # src/main/resources/application.properties

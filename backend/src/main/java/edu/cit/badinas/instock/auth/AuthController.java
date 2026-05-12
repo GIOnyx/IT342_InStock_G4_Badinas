@@ -52,4 +52,22 @@ public class AuthController {
         AuthResponse response = authService.getCurrentUser(user.getEmail());
         return ResponseEntity.ok(ApiResponse.success("Current user retrieved", response));
     }
+
+    @PutMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<AuthResponse>> updateMe(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody UpdateProfileRequest request) {
+        AuthResponse response = authService.updateCurrentUser(user.getEmail(), request);
+        return ResponseEntity.ok(ApiResponse.success("Profile updated", response));
+    }
+
+    @PutMapping("/me/password")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<AuthResponse>> changePassword(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        AuthResponse response = authService.changePassword(user.getEmail(), request);
+        return ResponseEntity.ok(ApiResponse.success("Password changed", response));
+    }
 }

@@ -19,7 +19,7 @@ class EmailServiceTest {
 
     @Test
     void sendWelcomeEmailSendsOnce() {
-        EmailService emailService = new EmailService(mailSender, "noreply@test.com");
+        EmailService emailService = new EmailService(mailSender, "noreply@test.com", "smtp.test.com");
 
         emailService.sendWelcomeEmail("user@test.com");
 
