@@ -60,7 +60,7 @@ class RecipeControllerTest {
         second.setTitle("Tomato Pasta");
         second.setImageUrl("https://img.example/pasta.jpg");
 
-        when(recipeApiFacade.searchByIngredients(eq("chicken,rice"), eq(2)))
+        when(recipeApiFacade.searchByIngredients(eq("chicken,rice"), eq(2), eq((String) null)))
                 .thenReturn(List.of(first, second));
 
         mockMvc.perform(get("/api/v1/recipes/search")
@@ -81,7 +81,7 @@ class RecipeControllerTest {
         recipe.setTitle("Spicy Noodles");
         recipe.setImageUrl("https://img.example/noodles.jpg");
 
-        when(recipeApiFacade.searchByRecipeTitle(eq("noodles"), eq(1)))
+        when(recipeApiFacade.searchByRecipeTitle(eq("noodles"), eq(1), eq((String) null)))
                 .thenReturn(List.of(recipe));
 
         mockMvc.perform(get("/api/v1/recipes/search-by-name")

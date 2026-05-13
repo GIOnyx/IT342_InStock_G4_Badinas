@@ -8,6 +8,7 @@ import RecipesPage from './features/recipes/RecipesPage';
 import FavoritesPage from './features/favorites/FavoritesPage';
 import ProfilePage from './features/profile/ProfilePage';
 import SettingsPage from './features/profile/SettingsPage';
+import AdminIngredientsPage from './features/admin/AdminIngredientsPage';
 import RecipeDetailPage from './features/recipes/RecipeDetailPage';
 
 function SmartRedirect() {
@@ -37,6 +38,7 @@ function App() {
         <Route path="favorites" element={<FavoritesPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="admin/ingredients" element={<AdminIngredientsPage />} />
       </Route>
       <Route path="*" element={<SmartRedirect />} />
     </Routes>

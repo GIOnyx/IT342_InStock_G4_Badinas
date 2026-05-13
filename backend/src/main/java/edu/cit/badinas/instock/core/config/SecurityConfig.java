@@ -25,6 +25,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final OAuth2LoginSuccessHandler oauth2LoginSuccessHandler;
+    private final OAuth2RequestCustomizer oauth2RequestCustomizer;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -38,7 +39,10 @@ public class SecurityConfig {
                 .requestMatchers("/uploads/**").permitAll()
                 .anyRequest().authenticated()
             )
-            .oauth2Login(oauth -> oauth.successHandler(oauth2LoginSuccessHandler))
+            .oauth2Login(oauth -> oauth
+                .authorizationEndpoint(endpoint -> endpoint.authorizationRequestResolver(oauth2RequestCustomizer))
+                .successHandler(oauth2LoginSuccessHandler)
+            )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

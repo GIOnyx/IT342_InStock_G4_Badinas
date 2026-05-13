@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import api from '../services/api';
+// Use local-only logout to keep browser Google session intact
 import { applyWebSettings, getWebSettings } from '../services/settings';
 import './DashboardShell.css';
 
@@ -11,6 +12,7 @@ const NAV_ITEMS = [
   { key: 'favorites', label: 'Favorites', path: '/dashboard/favorites' },
   { key: 'profile', label: 'Profile', path: '/dashboard/profile' },
   { key: 'settings', label: 'Settings', path: '/dashboard/settings' },
+  { key: 'admin', label: 'Admin', path: '/dashboard/admin/ingredients' },
 ];
 
 function DashboardShell() {
@@ -75,15 +77,18 @@ function DashboardShell() {
           </div>
 
           <nav className="sidebar-nav">
-            {NAV_ITEMS.map((item) => (
-              <NavLink
-                key={item.key}
-                to={item.path}
-                className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}
-              >
-                {item.label}
-              </NavLink>
-            ))}
+            {NAV_ITEMS.map((item) => {
+              if (item.key === 'admin' && user.role !== 'ADMIN') return null;
+              return (
+                <NavLink
+                  key={item.key}
+                  to={item.path}
+                  className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}
+                >
+                  {item.label}
+                </NavLink>
+              );
+            })}
           </nav>
         </div>
 

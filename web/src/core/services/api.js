@@ -41,4 +41,17 @@ export function uploadAvatar(file) {
   });
 }
 
+// Admin: master ingredients
+export function fetchMasterIngredients() {
+  return api.get('/admin/ingredients');
+}
+
+export function createMasterIngredient(payload) {
+  return api.post('/admin/ingredients', payload);
+}
+
+export function deleteMasterIngredient(id) {
+  return api.delete(`/admin/ingredients/${id}`);
+}
+
 export default api;
