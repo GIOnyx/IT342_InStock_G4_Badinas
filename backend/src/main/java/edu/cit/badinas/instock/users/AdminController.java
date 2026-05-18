@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -55,5 +56,25 @@ public class AdminController {
         );
 
         return ResponseEntity.ok(ApiResponse.success("System statistics", stats));
+    }
+
+    /**
+     * Returns a password-safe list of all registered users.
+     *
+     * <p>Each entry is mapped through {@link UserSummaryDTO} so that
+     * {@code passwordHash} is never serialised into the response —
+     * satisfying the SDD non-functional requirement on sensitive data exposure.
+     *
+     * @return {@link ApiResponse} wrapping a list of {@link UserSummaryDTO}
+     */
+    @GetMapping("/users")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ApiResponse<List<UserSummaryDTO>>> getUsers() {
+        List<UserSummaryDTO> users = userRepository.findAll()
+                .stream()
+                .map(UserSummaryDTO::from)
+                .toList();
+
+        return ResponseEntity.ok(ApiResponse.success("User list", users));
     }
 }

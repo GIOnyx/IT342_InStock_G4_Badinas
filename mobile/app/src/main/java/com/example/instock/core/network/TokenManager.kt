@@ -21,7 +21,7 @@ object TokenManager {
         return prefs?.getString(KEY_TOKEN, null)
     }
 
-    fun clearToken() {
+    fun clearSession() {
         prefs?.edit()?.remove(KEY_TOKEN)?.apply()
     }
 }
