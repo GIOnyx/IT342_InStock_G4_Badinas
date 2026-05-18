@@ -8,9 +8,15 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import java.util.List;
+import java.util.ArrayList;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -54,6 +60,11 @@ public class User {
     @Column(name = "is_verified")
     private Boolean isVerified = false;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_dietary_preferences", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "preference")
+    private List<String> dietaryPreferences = new ArrayList<>();
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -82,6 +93,7 @@ public class User {
         private String avatarUrl;
         private LocalDateTime createdAt;
         private Boolean isVerified = false;     // sensible default
+        private List<String> dietaryPreferences = new ArrayList<>();
 
         public UserBuilder id(Long id) {
             this.id = id;
@@ -123,6 +135,11 @@ public class User {
             return this;
         }
 
+        public UserBuilder dietaryPreferences(List<String> dietaryPreferences) {
+            this.dietaryPreferences = dietaryPreferences;
+            return this;
+        }
+
         /**
          * Terminal operation - constructs and returns the fully-configured
          * {@link User} instance.
@@ -137,6 +154,7 @@ public class User {
             user.setAvatarUrl(this.avatarUrl);
             user.setCreatedAt(this.createdAt);
             user.setIsVerified(this.isVerified);
+            user.setDietaryPreferences(this.dietaryPreferences);
             return user;
         }
     }

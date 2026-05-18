@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import api from '../../core/services/api';
+import api, { getRecipeDetail } from '../../core/services/api';
 import { useToast } from '../../core/components/Toast';
 
 const OVERVIEW_STATS_KEY = 'instock_overview_stats';
@@ -30,7 +30,7 @@ function RecipeDetailPage() {
     return value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
   };
 
-  const normalizeIngredientTokens = (value) => {
+  const normalizeIngredientTokens = useCallback((value) => {
     const ignoredWords = new Set([
       'a',
       'an',
@@ -76,28 +76,44 @@ function RecipeDetailPage() {
       .filter(Boolean)
       .map((token) => (token.endsWith('s') && token.length > 3 ? token.slice(0, -1) : token))
       .filter((token) => !ignoredWords.has(token));
-  };
+  }, []);
 
-  const userHasIngredient = (ingredient) => {
-    const ingredientTokens = normalizeIngredientTokens(ingredient);
+  const formatIngredient = useCallback((ingredient) => {
+    if (!ingredient) {
+      return '';
+    }
+    if (typeof ingredient === 'string') {
+      return ingredient;
+    }
+    return ingredient.original
+      || ingredient.originalName
+      || ingredient.name
+      || ingredient.nameClean
+      || '';
+  }, []);
 
-    return pantryItems.some((item) => {
-      const pantryTokens = normalizeIngredientTokens(item.name || '');
+  const pantryTokenSets = useMemo(() => (
+    pantryItems.map((item) => normalizeIngredientTokens(item.name || ''))
+  ), [normalizeIngredientTokens, pantryItems]);
 
+  const userHasIngredient = useCallback((ingredient) => {
+    const ingredientTokens = normalizeIngredientTokens(formatIngredient(ingredient));
+
+    return pantryTokenSets.some((pantryTokens) => {
       if (pantryTokens.length === 0) {
         return false;
       }
 
       return pantryTokens.every((token) => ingredientTokens.includes(token));
     });
-  };
+  }, [formatIngredient, normalizeIngredientTokens, pantryTokenSets]);
 
   useEffect(() => {
     const loadRecipeDetails = async () => {
       setLoading(true);
       try {
         const [recipeResponse, favoritesResponse, pantryResponse] = await Promise.all([
-          api.get(`/recipes/${recipeId}`),
+          getRecipeDetail(recipeId),
           api.get('/favorites').catch(() => ({ data: { data: [] } })),
           api.get('/stock').catch(() => ({ data: { data: [] } })),
         ]);
@@ -166,9 +182,41 @@ function RecipeDetailPage() {
   }
 
   const summary = cleanSummary(recipe.summary);
-  const ingredients = recipe.ingredients || [];
-  const instructions = recipe.instructions || [];
-  const ownedIngredientCount = ingredients.filter(userHasIngredient).length;
+
+  const ingredients = useMemo(() => {
+    if (Array.isArray(recipe.ingredients)) {
+      return recipe.ingredients;
+    }
+    if (Array.isArray(recipe.extendedIngredients)) {
+      return recipe.extendedIngredients.map(formatIngredient).filter(Boolean);
+    }
+    return [];
+  }, [formatIngredient, recipe.extendedIngredients, recipe.ingredients]);
+
+  const instructions = useMemo(() => {
+    if (Array.isArray(recipe.instructionGroups)) {
+      return recipe.instructionGroups.flatMap((group) =>
+        (group.steps || []).map((step) => (typeof step === 'string' ? step : step.step)).filter(Boolean)
+      );
+    }
+    if (Array.isArray(recipe.instructions)) {
+      return recipe.instructions;
+    }
+    if (typeof recipe.instructions === 'string') {
+      return recipe.instructions.split('\n').map((line) => line.trim()).filter(Boolean);
+    }
+    return [];
+  }, [recipe.instructionGroups, recipe.instructions]);
+
+  const ownedIngredients = useMemo(
+    () => ingredients.filter(userHasIngredient),
+    [ingredients, userHasIngredient]
+  );
+  const missingIngredients = useMemo(
+    () => ingredients.filter((item) => !userHasIngredient(item)),
+    [ingredients, userHasIngredient]
+  );
+  const ownedIngredientCount = ownedIngredients.length;
 
   return (
     <div className="recipe-detail-page">
@@ -198,7 +246,8 @@ function RecipeDetailPage() {
               <span>{recipe.readyInMinutes || '-'} min</span>
               <span>{recipe.servings || '-'} servings</span>
               <span>{ingredients.length} ingredients</span>
-              <span>{ownedIngredientCount} in pantry</span>
+              <span>{ownedIngredientCount} have</span>
+              <span>{missingIngredients.length} need</span>
             </div>
           </div>
 
@@ -227,25 +276,36 @@ function RecipeDetailPage() {
           <div className="dash-card-header">
             <div>
               <h2>Ingredients</h2>
-              <p>{ownedIngredientCount} available, {ingredients.length - ownedIngredientCount} missing</p>
+              <p>{ownedIngredientCount} available, {missingIngredients.length} missing</p>
             </div>
           </div>
-          <ul className="detail-list detail-list-ingredients">
-            {ingredients.length === 0 && <li>No ingredients available.</li>}
-            {ingredients.map((item, index) => {
-              const isOwned = userHasIngredient(item);
+          <div className="detail-ingredient-sections">
+            <div>
+              <h3>Ingredients You Have</h3>
+              <ul className="detail-list detail-list-ingredients">
+                {ownedIngredients.length === 0 && <li>No ingredients matched.</li>}
+                {ownedIngredients.map((item, index) => (
+                  <li key={`have-${item}-${index}`} className="detail-ingredient detail-ingredient-owned">
+                    <span>{item}</span>
+                    <strong>Have</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-              return (
-                <li
-                  key={`${item}-${index}`}
-                  className={`detail-ingredient ${isOwned ? 'detail-ingredient-owned' : 'detail-ingredient-missing'}`}
-                >
-                  <span>{item}</span>
-                  <strong>{isOwned ? 'Have' : 'Missing'}</strong>
-                </li>
-              );
-            })}
-          </ul>
+            <div>
+              <h3>Ingredients You Need</h3>
+              <ul className="detail-list detail-list-ingredients">
+                {missingIngredients.length === 0 && <li>No missing ingredients.</li>}
+                {missingIngredients.map((item, index) => (
+                  <li key={`need-${item}-${index}`} className="detail-ingredient detail-ingredient-missing">
+                    <span>{item}</span>
+                    <strong>Missing</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         </article>
 
         <article className="recipe-detail-panel recipe-detail-panel-wide">

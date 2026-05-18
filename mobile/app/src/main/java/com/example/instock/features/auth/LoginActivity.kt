@@ -4,48 +4,37 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Patterns
 import android.view.View
-import android.widget.ProgressBar
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.example.instock.R
 import com.example.instock.core.navigation.DashboardActivity
+import com.example.instock.core.navigation.MainActivity
 import com.example.instock.core.network.ApiClient
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.textfield.TextInputEditText
-import com.google.gson.JsonObject
-import okhttp3.ResponseBody
+import com.example.instock.core.network.TokenManager
+import com.example.instock.databinding.ActivityLoginBinding
 import org.json.JSONObject
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import retrofit2.HttpException
+import kotlinx.coroutines.launch
+import com.example.instock.features.admin.AdminActivity
 
 class LoginActivity : AppCompatActivity() {
 
-    private lateinit var emailInput: TextInputEditText
-    private lateinit var passwordInput: TextInputEditText
-    private lateinit var loginButton: MaterialButton
-    private lateinit var goToRegisterText: TextView
-    private lateinit var progressBar: ProgressBar
+    private lateinit var binding: ActivityLoginBinding
     private var isRequestInFlight = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_login)
-
-        emailInput = findViewById(R.id.emailInput)
-        passwordInput = findViewById(R.id.passwordInput)
-        loginButton = findViewById(R.id.loginButton)
-        goToRegisterText = findViewById(R.id.goToRegisterText)
-        progressBar = findViewById(R.id.loginProgress)
+        binding = ActivityLoginBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         val prefilledEmail = intent.getStringExtra(EXTRA_REGISTERED_EMAIL)
         if (!prefilledEmail.isNullOrBlank()) {
-            emailInput.setText(prefilledEmail)
+            binding.emailInput.setText(prefilledEmail)
         }
 
-        loginButton.setOnClickListener { attemptLogin() }
-        goToRegisterText.setOnClickListener {
+        binding.loginButton.setOnClickListener { attemptLogin() }
+        binding.goToRegisterText.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
         }
     }
@@ -53,8 +42,8 @@ class LoginActivity : AppCompatActivity() {
     private fun attemptLogin() {
         if (isRequestInFlight) return
 
-        val email = emailInput.text?.toString()?.trim().orEmpty()
-        val password = passwordInput.text?.toString().orEmpty()
+        val email = binding.emailInput.text?.toString()?.trim().orEmpty()
+        val password = binding.passwordInput.text?.toString().orEmpty()
 
         if (!isInputValid(email, password)) {
             return
@@ -62,61 +51,75 @@ class LoginActivity : AppCompatActivity() {
 
         setLoading(true)
 
-        ApiClient.authApi.login(LoginRequest(email = email, password = password))
-            .enqueue(object : Callback<JsonObject> {
-                override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                    setLoading(false)
-
-                    if (response.isSuccessful) {
-                        val body = response.body()
-                        val token = body?.get("token")?.asString.orEmpty()
-                        if (token.isNotEmpty()) {
-                            com.example.instock.core.network.TokenManager.saveToken(token)
-                        }
-
-                        Toast.makeText(this@LoginActivity, getString(R.string.login_success), Toast.LENGTH_SHORT).show()
-                        val intent = Intent(this@LoginActivity, DashboardActivity::class.java)
-                        intent.putExtra(DashboardActivity.EXTRA_EMAIL, email)
-                        startActivity(intent)
-                        finish()
-                    } else {
-                        val errorMessage = parseErrorMessage(response.errorBody())
-                        Toast.makeText(this@LoginActivity, errorMessage, Toast.LENGTH_LONG).show()
+        lifecycleScope.launch {
+            try {
+                val response = ApiClient.authApi.loginSuspend(LoginRequest(email = email, password = password))
+                if (response.success && response.data != null) {
+                    val token = response.data.token.orEmpty()
+                    if (token.isNotEmpty()) {
+                        TokenManager.saveToken(token)
                     }
-                }
+                    TokenManager.saveRole(response.data.role)
 
-                override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                    setLoading(false)
-                    Toast.makeText(
-                        this@LoginActivity,
-                        getString(R.string.network_error, t.localizedMessage ?: getString(R.string.unknown_error)),
-                        Toast.LENGTH_LONG
-                    ).show()
+                    Toast.makeText(this@LoginActivity, getString(R.string.login_success), Toast.LENGTH_SHORT).show()
+
+                    val destination = if (response.data.role == "ADMIN") {
+                        AdminActivity::class.java
+                    } else {
+                        com.example.instock.core.navigation.DashboardActivity::class.java
+                    }
+                    val intent = Intent(this@LoginActivity, destination)
+                    val extraKey = if (destination == AdminActivity::class.java) {
+                        "extra_email"
+                    } else {
+                        com.example.instock.core.navigation.DashboardActivity.EXTRA_EMAIL
+                    }
+                    intent.putExtra(extraKey, email)
+                    startActivity(intent)
+                    finish()
+                } else {
+                    Toast.makeText(this@LoginActivity, response.message, Toast.LENGTH_LONG).show()
                 }
-            })
+            } catch (error: HttpException) {
+                val message = if (error.code() == 401) {
+                    getString(R.string.invalid_credentials)
+                } else {
+                    parseErrorMessage(error.response()?.errorBody()?.string())
+                }
+                Toast.makeText(this@LoginActivity, message, Toast.LENGTH_LONG).show()
+            } catch (error: Exception) {
+                Toast.makeText(
+                    this@LoginActivity,
+                    getString(R.string.network_error, error.localizedMessage ?: getString(R.string.unknown_error)),
+                    Toast.LENGTH_LONG
+                ).show()
+            } finally {
+                setLoading(false)
+            }
+        }
     }
 
     private fun isInputValid(email: String, password: String): Boolean {
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            emailInput.error = getString(R.string.invalid_email)
-            emailInput.requestFocus()
+            binding.emailInput.error = getString(R.string.invalid_email)
+            binding.emailInput.requestFocus()
             return false
         }
 
         if (password.length < 8) {
-            passwordInput.error = getString(R.string.invalid_password)
-            passwordInput.requestFocus()
+            binding.passwordInput.error = getString(R.string.invalid_password)
+            binding.passwordInput.requestFocus()
             return false
         }
 
-        emailInput.error = null
-        passwordInput.error = null
+        binding.emailInput.error = null
+        binding.passwordInput.error = null
         return true
     }
 
-    private fun parseErrorMessage(errorBody: ResponseBody?): String {
+    private fun parseErrorMessage(errorBody: String?): String {
         return try {
-            val json = JSONObject(errorBody?.string().orEmpty())
+            val json = JSONObject(errorBody.orEmpty())
             when {
                 json.has("message") -> json.getString("message")
                 json.has("error") -> json.getString("error")
@@ -129,9 +132,9 @@ class LoginActivity : AppCompatActivity() {
 
     private fun setLoading(isLoading: Boolean) {
         isRequestInFlight = isLoading
-        progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
-        loginButton.isEnabled = !isLoading
-        goToRegisterText.isEnabled = !isLoading
+        binding.loginProgress.visibility = if (isLoading) View.VISIBLE else View.GONE
+        binding.loginButton.isEnabled = !isLoading
+        binding.goToRegisterText.isEnabled = !isLoading
     }
 
     companion object {

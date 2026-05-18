@@ -38,7 +38,14 @@ function App() {
         <Route path="favorites" element={<FavoritesPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="settings" element={<SettingsPage />} />
-        <Route path="admin/ingredients" element={<AdminIngredientsPage />} />
+        <Route
+          path="admin/ingredients"
+          element={
+            <PrivateRoute allowedRoles={['ADMIN']}>
+              <AdminIngredientsPage />
+            </PrivateRoute>
+          }
+        />
       </Route>
       <Route path="*" element={<SmartRedirect />} />
     </Routes>

@@ -3,6 +3,7 @@ package edu.cit.badinas.instock.users;
 import edu.cit.badinas.instock.core.dto.ApiResponse;
 import edu.cit.badinas.instock.favorites.FavoriteRecipeRepository;
 import edu.cit.badinas.instock.pantry.PantryItemRepository;
+import edu.cit.badinas.instock.users.dto.UserSummaryDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -10,7 +11,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Admin-only controller.
@@ -42,7 +45,7 @@ public class AdminController {
      * @return {@link ApiResponse} wrapping a statistics map
      */
     @GetMapping("/stats")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Map<String, Long>>> getStats() {
         long totalUsers = userRepository.count();
         long totalPantryItems = pantryItemRepository.count();
@@ -55,5 +58,27 @@ public class AdminController {
         );
 
         return ResponseEntity.ok(ApiResponse.success("System statistics", stats));
+    }
+
+    /**
+     * Returns a list of registered users with safe fields only.
+     *
+     * @return {@link ApiResponse} wrapping a list of user summaries
+     */
+    @GetMapping("/users")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<List<UserSummaryDTO>>> getUsers() {
+        List<UserSummaryDTO> users = userRepository.findAll().stream()
+                .map(user -> {
+                    UserSummaryDTO dto = new UserSummaryDTO();
+                    dto.setId(user.getId());
+                    dto.setFullName(user.getFullName());
+                    dto.setEmail(user.getEmail());
+                    dto.setRole(user.getRole() != null ? user.getRole().name() : null);
+                    return dto;
+                })
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(ApiResponse.success("Registered users", users));
     }
 }

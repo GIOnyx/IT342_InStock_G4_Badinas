@@ -54,4 +54,21 @@ export function deleteMasterIngredient(id) {
   return api.delete(`/admin/ingredients/${id}`);
 }
 
+export function getRecipeDetail(id) {
+  return api.get(`/recipes/${id}`);
+}
+
+export function removeFavorite(id) {
+  return api.delete(`/favorites/${id}`);
+}
+
+// Admin: users and stats
+export function fetchAdminUsers() {
+  return api.get('/admin/users');
+}
+
+export function fetchAdminStats() {
+  return api.get('/admin/stats');
+}
+
 export default api;

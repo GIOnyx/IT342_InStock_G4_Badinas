@@ -39,4 +39,12 @@ class PantryAdapter(
         items = newItems
         notifyDataSetChanged()
     }
+
+    fun removeItemAt(position: Int): PantryItem {
+        val mutableItems = items.toMutableList()
+        val removed = mutableItems.removeAt(position)
+        items = mutableItems
+        notifyItemRemoved(position)
+        return removed
+    }
 }

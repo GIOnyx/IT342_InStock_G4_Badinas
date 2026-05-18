@@ -20,6 +20,7 @@ public class AuthResponse {
     private String role;
     private String avatarUrl;
     private String token;
+    private java.util.List<String> dietaryPreferences;
 
     // ── Builder Pattern (Manual Implementation) ───────────────────────
 
@@ -41,6 +42,7 @@ public class AuthResponse {
         private String role;
         private String avatarUrl;
         private String token;
+        private java.util.List<String> dietaryPreferences;
 
         public AuthResponseBuilder id(Long id) {
             this.id = id;
@@ -72,6 +74,11 @@ public class AuthResponse {
             return this;
         }
 
+        public AuthResponseBuilder dietaryPreferences(java.util.List<String> dietaryPreferences) {
+            this.dietaryPreferences = dietaryPreferences;
+            return this;
+        }
+
         /**
          * Terminal operation — constructs and returns the fully-configured
          * {@link AuthResponse} instance.
@@ -84,6 +91,7 @@ public class AuthResponse {
             response.setRole(this.role);
             response.setAvatarUrl(this.avatarUrl);
             response.setToken(this.token);
+            response.setDietaryPreferences(this.dietaryPreferences);
             return response;
         }
     }

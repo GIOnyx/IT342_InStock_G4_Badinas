@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.cit.badinas.instock.auth.security.JwtService;
 import edu.cit.badinas.instock.auth.security.OAuth2LoginSuccessHandler;
 import edu.cit.badinas.instock.core.config.SecurityConfig;
+import edu.cit.badinas.instock.core.config.OAuth2RequestCustomizer;
 import edu.cit.badinas.instock.recipes.dto.RecipeDTO;
 import edu.cit.badinas.instock.recipes.dto.RecipeDetailDTO;
 import edu.cit.badinas.instock.users.UserRepository;
@@ -13,6 +14,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -28,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(RecipeController.class)
 @Import(SecurityConfig.class)
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 class RecipeControllerTest {
 
     @Autowired
@@ -41,11 +45,17 @@ class RecipeControllerTest {
     @MockitoBean
     private JwtService jwtService;
 
+        @MockitoBean
+        private UserDetailsService userDetailsService;
+
     @MockitoBean
     private UserRepository userRepository;
 
     @MockitoBean
     private OAuth2LoginSuccessHandler oauth2LoginSuccessHandler;
+
+    @MockitoBean
+    private OAuth2RequestCustomizer oauth2RequestCustomizer;
 
     @Test
     @WithMockUser

@@ -10,7 +10,8 @@ import com.example.instock.R
 
 class RecipeAdapter(
     private var items: List<RecipeDTO>,
-    private val onFavoriteClicked: (RecipeDTO) -> Unit
+    private val onFavoriteClicked: (RecipeDTO) -> Unit,
+    private val onItemClicked: (RecipeDTO) -> Unit
 ) : RecyclerView.Adapter<RecipeAdapter.RecipeViewHolder>() {
 
     class RecipeViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -34,6 +35,10 @@ class RecipeAdapter(
 
         holder.btnFavorite.setOnClickListener {
             onFavoriteClicked(item)
+        }
+
+        holder.itemView.setOnClickListener {
+            onItemClicked(item)
         }
     }
 

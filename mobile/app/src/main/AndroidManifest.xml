@@ -21,6 +21,12 @@
             android:name=".features.auth.RegisterActivity"
             android:exported="false" />
         <activity
+            android:name=".features.admin.AdminActivity"
+            android:exported="false" />
+        <activity
+            android:name=".features.recipes.RecipeDetailActivity"
+            android:exported="false" />
+        <activity
             android:name=".core.navigation.DashboardActivity"
             android:exported="false" />
         <activity

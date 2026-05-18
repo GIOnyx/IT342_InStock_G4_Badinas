@@ -97,6 +97,7 @@ public class AuthService {
                 .role(user.getRole().name())
                 .avatarUrl(user.getAvatarUrl())   // fix: include avatarUrl on register
                 .token(token)
+                .dietaryPreferences(user.getDietaryPreferences())
                 .build();
     }
 
@@ -168,6 +169,7 @@ public class AuthService {
                 .role(user.getRole().name())
                 .avatarUrl(user.getAvatarUrl())
                 .token(token)
+                .dietaryPreferences(user.getDietaryPreferences())
                 .build();
     }
 
@@ -190,6 +192,9 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         user.setFullName(request.getFullName().trim());
+        if (request.getDietaryPreferences() != null) {
+            user.setDietaryPreferences(request.getDietaryPreferences());
+        }
         User savedUser = userRepository.save(user);
         return toAuthResponse(savedUser);
     }
@@ -219,6 +224,7 @@ public class AuthService {
                 .fullName(user.getFullName())
                 .role(user.getRole().name())
                 .avatarUrl(user.getAvatarUrl())
+                .dietaryPreferences(user.getDietaryPreferences())
                 .build();
     }
 

@@ -17,6 +17,35 @@ data class RecipeListResponse(
     val data: List<RecipeDTO>
 )
 
+data class RecipeDetailDTO(
+    val recipeId: Long,
+    val title: String,
+    val imageUrl: String?,
+    val summary: String?,
+    val readyInMinutes: Int?,
+    val servings: Int?,
+    val sourceUrl: String?,
+    val extendedIngredients: List<ExtendedIngredient>?,
+    val instructionGroups: List<InstructionGroup>?
+)
+
+data class ExtendedIngredient(
+    val id: Long?,
+    val name: String?,
+    val original: String?,
+    val originalName: String?
+)
+
+data class InstructionGroup(
+    val name: String?,
+    val steps: List<InstructionStep>?
+)
+
+data class InstructionStep(
+    val number: Int?,
+    val step: String?
+)
+
 data class FavoriteRecipe(
     val id: Long,
     val externalRecipeId: Long,

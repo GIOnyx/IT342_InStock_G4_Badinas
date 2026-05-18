@@ -87,6 +87,7 @@ describe('Auth feature', () => {
       });
     });
 
+    // Login should successfully go to the Dashboard
     expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
     expect(window.localStorage.getItem('token')).toBe('token-123');
   });
@@ -108,9 +109,8 @@ describe('Auth feature', () => {
     const user = userEvent.setup();
     api.post.mockResolvedValueOnce({
       data: {
+        message: 'Account created. Check your email to verify your account.',
         data: {
-          token: 'reg-token-123',
-          role: 'USER',
           email: 'new.user@example.com',
           fullName: 'New User',
         },
@@ -137,7 +137,16 @@ describe('Auth feature', () => {
       });
     });
 
-    expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
-    expect(window.localStorage.getItem('token')).toBe('reg-token-123');
+    // 1. Verify redirect to Landing Page (root)
+    expect(mockNavigate).toHaveBeenCalledWith('/'); 
+
+    // 2. Verify toast message (Case-sensitive fix: "Check" with capital C)
+    expect(mockAddToast).toHaveBeenCalledWith(
+      expect.stringContaining('Check your email'), 
+      'success'
+    );
+
+    // 3. Verify no token is saved (since registration no longer auto-logs in)
+    expect(window.localStorage.getItem('token')).toBeNull();
   });
 });

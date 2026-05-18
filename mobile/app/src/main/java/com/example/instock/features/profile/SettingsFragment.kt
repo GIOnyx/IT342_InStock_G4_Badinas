@@ -10,11 +10,14 @@ import android.widget.EditText
 import android.widget.Spinner
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.example.instock.R
 import com.example.instock.core.network.AllergenPrefs
 import com.example.instock.core.network.ApiClient
 import com.example.instock.features.auth.AuthMeResponse
 import com.example.instock.features.auth.ChangePasswordRequest
+import com.example.instock.features.auth.UpdateProfileRequest
+import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -28,7 +31,8 @@ class SettingsFragment : Fragment() {
     private lateinit var spinnerLimit: Spinner
     private lateinit var btnSaveAllergens: View
 
-    // Allergen checkboxes — keys match Spoonacular intolerances param values
+    private var currentFullName: String = ""
+
     private val allergenCheckboxIds = listOf(
         "dairy"     to R.id.cbDairy,
         "egg"       to R.id.cbEgg,
@@ -59,7 +63,6 @@ class SettingsFragment : Fragment() {
         spinnerLimit = view.findViewById(R.id.spinnerLimit)
         btnSaveAllergens = view.findViewById(R.id.btnSaveAllergens)
 
-        // ── Recipe limit spinner ──────────────────────────────────────
         val adapter = ArrayAdapter.createFromResource(
             requireContext(),
             R.array.recipe_limit_options,
@@ -68,36 +71,68 @@ class SettingsFragment : Fragment() {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerLimit.adapter = adapter
 
-        // ── Change password ───────────────────────────────────────────
         btnChange.setOnClickListener { changePassword() }
 
-        // ── Allergen checkboxes ───────────────────────────────────────
-        val savedAllergens = AllergenPrefs.getAllergens()
         allergenCheckboxIds.forEach { (key, resId) ->
-            val cb = view.findViewById<CheckBox>(resId)
-            cb.isChecked = savedAllergens.contains(key)
-            checkboxViews[key] = cb
+            checkboxViews[key] = view.findViewById(resId)
         }
 
         btnSaveAllergens.setOnClickListener { saveAllergens() }
 
+        loadProfile()
+
         return view
     }
 
+    private fun loadProfile() {
+        lifecycleScope.launch {
+            try {
+                val response = ApiClient.authApi.getMeSuspend()
+                if (response.success && response.data != null) {
+                    currentFullName = response.data.fullName
+                    val serverPrefs = response.data.dietaryPreferences ?: emptyList()
+                    AllergenPrefs.saveAllergens(serverPrefs.toSet())
+                    
+                    checkboxViews.forEach { (key, cb) ->
+                        cb.isChecked = serverPrefs.contains(key)
+                    }
+                }
+            } catch (e: Exception) {
+                // Fallback to local
+                val savedAllergens = AllergenPrefs.getAllergens()
+                checkboxViews.forEach { (key, cb) ->
+                    cb.isChecked = savedAllergens.contains(key)
+                }
+            }
+        }
+    }
+
     private fun saveAllergens() {
+        if (currentFullName.isEmpty()) {
+            Toast.makeText(requireContext(), "Profile not fully loaded yet", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         val selected = checkboxViews
             .filter { (_, cb) -> cb.isChecked }
             .keys
-            .toSet()
+            .toList()
 
-        AllergenPrefs.saveAllergens(selected)
-
-        val message = if (selected.isEmpty()) {
-            "Dietary preferences cleared."
-        } else {
-            "Saved: ${selected.joinToString(", ")}"
+        lifecycleScope.launch {
+            try {
+                val req = UpdateProfileRequest(fullName = currentFullName, dietaryPreferences = selected)
+                val response = ApiClient.authApi.updateMeSuspend(req)
+                if (response.success) {
+                    AllergenPrefs.saveAllergens(selected.toSet())
+                    val message = if (selected.isEmpty()) "Dietary preferences cleared." else "Saved: ${selected.joinToString(", ")}"
+                    Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeText(requireContext(), "Failed to save: ${response.message}", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Network error", Toast.LENGTH_SHORT).show()
+            }
         }
-        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
     }
 
     private fun changePassword() {

@@ -38,12 +38,9 @@ function Register() {
     setLoading(true);
 
     try {
-      const response = await api.post('/auth/register', formData);
-      const userData = response.data.data;
-      localStorage.setItem('token', userData.token);
-      localStorage.setItem('user', JSON.stringify(userData));
-      addToast('Account created successfully! Welcome to InStock 🎉', 'success');
-      navigate('/dashboard');
+      await api.post('/auth/register', formData);
+      addToast('Account created. Check your email to verify your account.', 'success');
+      navigate('/');
     } catch (err) {
       const data = err.response?.data;
       if (data?.error?.code === 'VALIDATION-001' && data.error.details) {

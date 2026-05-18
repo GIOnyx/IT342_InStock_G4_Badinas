@@ -18,7 +18,8 @@ data class AuthResponse(
     val fullName: String,
     val role: String,
     val avatarUrl: String?,
-    val token: String?
+    val token: String?,
+    val dietaryPreferences: List<String>?
 )
 
 data class AuthMeResponse(
@@ -28,7 +29,8 @@ data class AuthMeResponse(
 )
 
 data class UpdateProfileRequest(
-    val fullName: String
+    val fullName: String,
+    val dietaryPreferences: List<String>?
 )
 
 data class ChangePasswordRequest(

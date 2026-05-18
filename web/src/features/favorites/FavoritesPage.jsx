@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../../core/services/api';
+import api, { removeFavorite as removeFavoriteRequest } from '../../core/services/api';
 import { useToast } from '../../core/components/Toast';
 
 const OVERVIEW_STATS_KEY = 'instock_overview_stats';
@@ -10,6 +10,9 @@ function FavoritesPage() {
   const navigate = useNavigate();
   const addToast = useToast();
   const [isOffline, setIsOffline] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [removingId, setRemovingId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [favorites, setFavorites] = useState(() => {
     // Seed from cache so the list renders before the network call
     try {
@@ -28,6 +31,7 @@ function FavoritesPage() {
   };
 
   const loadFavorites = async () => {
+    setIsLoading(true);
     try {
       const response = await api.get('/favorites');
       const items = response.data?.data || [];
@@ -48,6 +52,8 @@ function FavoritesPage() {
       } else {
         addToast('Unable to load favorites.', 'error');
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -55,11 +61,18 @@ function FavoritesPage() {
     loadFavorites();
   }, []);
 
-  const sortedFavorites = useMemo(() => [...favorites].sort((a, b) => b.likes - a.likes), [favorites]);
+  const filteredFavorites = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    const list = query
+      ? favorites.filter((item) => (item.title || '').toLowerCase().includes(query))
+      : favorites;
+    return [...list].sort((a, b) => (b.likes || 0) - (a.likes || 0));
+  }, [favorites, searchTerm]);
 
   const removeFavorite = async (id) => {
+    setRemovingId(id);
     try {
-      await api.delete(`/favorites/${id}`);
+      await removeFavoriteRequest(id);
       setFavorites((prev) => {
         const next = prev.filter((item) => item.id !== id);
         localStorage.setItem(FAVORITES_CACHE_KEY, JSON.stringify(next));
@@ -73,6 +86,8 @@ function FavoritesPage() {
       addToast('Favorite removed.', 'success');
     } catch {
       addToast('Unable to remove favorite.', 'error');
+    } finally {
+      setRemovingId(null);
     }
   };
 
@@ -89,11 +104,30 @@ function FavoritesPage() {
       </header>
 
       <section className="dash-card">
-        {sortedFavorites.length === 0 ? (
-          <div className="results-state">No favorites yet.</div>
-        ) : (
+        <div className="search-controls">
+          <div className="form-column">
+            <label htmlFor="favorite-search">Search Favorites</label>
+            <input
+              id="favorite-search"
+              className="ingredients-input"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Search by recipe title"
+            />
+          </div>
+        </div>
+
+        {isLoading && <div className="results-state">Loading favorites...</div>}
+
+        {!isLoading && filteredFavorites.length === 0 && (
+          <div className="results-state">
+            {searchTerm.trim() ? 'No matching favorites found.' : 'No favorites yet.'}
+          </div>
+        )}
+
+        {!isLoading && filteredFavorites.length > 0 && (
           <div className="recipe-grid">
-            {sortedFavorites.map((item) => (
+            {filteredFavorites.map((item) => (
               <article key={item.id} className="recipe-card">
                 <button
                   type="button"
@@ -119,7 +153,21 @@ function FavoritesPage() {
                   </button>
                   <p className="recipe-meta">{item.likes} likes</p>
                   <div className="favorite-row-actions">
-                    <button type="button" className="favorite-remove" onClick={() => removeFavorite(item.id)}>Remove</button>
+                    <button
+                      type="button"
+                      className="action-btn action-btn-secondary"
+                      onClick={() => navigate(`/dashboard/recipes/${item.externalRecipeId}`)}
+                    >
+                      View Full Recipe
+                    </button>
+                    <button
+                      type="button"
+                      className="favorite-remove"
+                      onClick={() => removeFavorite(item.id)}
+                      disabled={removingId === item.id}
+                    >
+                      {removingId === item.id ? 'Removing...' : 'Remove'}
+                    </button>
                   </div>
                 </div>
               </article>

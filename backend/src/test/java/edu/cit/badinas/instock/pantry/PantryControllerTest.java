@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.cit.badinas.instock.core.config.SecurityConfig;
 import edu.cit.badinas.instock.users.Role;
 import edu.cit.badinas.instock.users.User;
+import edu.cit.badinas.instock.core.config.OAuth2RequestCustomizer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -14,9 +15,11 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.ActiveProfiles;
 
 import edu.cit.badinas.instock.auth.security.JwtService;
 import edu.cit.badinas.instock.auth.security.OAuth2LoginSuccessHandler;
@@ -42,6 +45,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(PantryController.class)
 @Import(SecurityConfig.class)
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 class PantryControllerTest {
 
     @Autowired
@@ -56,7 +60,13 @@ class PantryControllerTest {
     private OAuth2LoginSuccessHandler oauth2LoginSuccessHandler;
 
     @MockitoBean
+    private OAuth2RequestCustomizer oauth2RequestCustomizer;
+
+    @MockitoBean
     private JwtService jwtService;
+
+    @MockitoBean
+    private UserDetailsService userDetailsService;
 
     @MockitoBean
     private UserRepository userRepository;

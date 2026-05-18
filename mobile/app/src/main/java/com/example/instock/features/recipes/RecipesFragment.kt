@@ -1,5 +1,6 @@
 package com.example.instock.features.recipes
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -13,6 +14,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.instock.R
 import com.example.instock.core.network.AllergenPrefs
 import com.example.instock.core.network.ApiClient
+import com.example.instock.core.network.OfflineCache
+import com.google.android.material.button.MaterialButton
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -23,6 +26,7 @@ class RecipesFragment : Fragment() {
     private lateinit var adapter: RecipeAdapter
     private lateinit var etSearchQuery: EditText
     private lateinit var btnSearch: Button
+    private lateinit var btnSuggestPantry: MaterialButton
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -32,11 +36,16 @@ class RecipesFragment : Fragment() {
         rvRecipes = view.findViewById(R.id.rvRecipes)
         etSearchQuery = view.findViewById(R.id.etSearchQuery)
         btnSearch = view.findViewById(R.id.btnSearch)
+        btnSuggestPantry = view.findViewById(R.id.btnSuggestPantry)
 
         rvRecipes.layoutManager = LinearLayoutManager(requireContext())
-        adapter = RecipeAdapter(emptyList()) { item ->
+        adapter = RecipeAdapter(emptyList(), { item ->
             saveFavorite(item)
-        }
+        }, { item ->
+            val intent = Intent(requireContext(), RecipeDetailActivity::class.java)
+            intent.putExtra("RECIPE_ID", item.recipeId)
+            startActivity(intent)
+        })
         rvRecipes.adapter = adapter
 
         btnSearch.setOnClickListener {
@@ -44,6 +53,16 @@ class RecipesFragment : Fragment() {
             if (query.isNotEmpty()) {
                 searchRecipes(query)
             }
+        }
+
+        btnSuggestPantry.setOnClickListener {
+            val pantryItems = OfflineCache.loadPantry()
+            if (pantryItems.isEmpty()) {
+                Toast.makeText(requireContext(), "Your pantry is empty! Add items first.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            val ingredientsParam = pantryItems.joinToString(",") { it.name }
+            searchRecipesByIngredients(ingredientsParam)
         }
 
         return view
@@ -61,16 +80,39 @@ class RecipesFragment : Fragment() {
                 if (response.isSuccessful) {
                     val data = response.body()?.data ?: emptyList()
                     adapter.updateItems(data)
-                    // Show allergen filter toast (AC-4)
                     if (intolerances != null) {
-                        Toast.makeText(
-                            requireContext(),
-                            "Recipes filtered — excluding: $intolerances",
-                            Toast.LENGTH_LONG
-                        ).show()
+                        Toast.makeText(requireContext(), "Filtered excluding: $intolerances", Toast.LENGTH_LONG).show()
                     }
                 } else {
                     Toast.makeText(requireContext(), "Failed to search recipes", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            override fun onFailure(call: Call<RecipeListResponse>, t: Throwable) {
+                if (isAdded) {
+                    Toast.makeText(requireContext(), "Network error: ${t.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        })
+    }
+
+    private fun searchRecipesByIngredients(ingredients: String) {
+        val intolerances = AllergenPrefs.getIntolerancesParam()
+
+        ApiClient.recipeApi.searchByIngredients(
+            ingredients = ingredients,
+            intolerances = intolerances
+        ).enqueue(object : Callback<RecipeListResponse> {
+            override fun onResponse(call: Call<RecipeListResponse>, response: Response<RecipeListResponse>) {
+                if (!isAdded) return
+                if (response.isSuccessful) {
+                    val data = response.body()?.data ?: emptyList()
+                    adapter.updateItems(data)
+                    if (intolerances != null) {
+                        Toast.makeText(requireContext(), "Filtered excluding: $intolerances", Toast.LENGTH_LONG).show()
+                    }
+                } else {
+                    Toast.makeText(requireContext(), "Failed to suggest recipes", Toast.LENGTH_SHORT).show()
                 }
             }
 

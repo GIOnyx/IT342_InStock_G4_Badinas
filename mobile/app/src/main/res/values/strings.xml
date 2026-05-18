@@ -1,5 +1,6 @@
-<resources>
+resources>
     <string name="app_name">InStock</string>
+    <string name="base_url">http://10.0.2.2:8080/</string>
     <string name="login_title">Welcome back</string>
     <string name="login_subtitle">Sign in to continue</string>
     <string name="register_title">Create account</string>
