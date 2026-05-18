@@ -1,12 +1,24 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import Navbar from '../../core/components/Navbar';
 import AuthPanel from '../auth/AuthPanel';
+import { useToast } from '../../core/components/Toast';
 import './Landing.css';
 
 function Landing() {
   const location = useLocation();
   const navigate = useNavigate();
+  const addToast = useToast();
+
+  // Show a one-shot toast delivered via router state (e.g. from PrivateRoute
+  // RBAC denial), then immediately scrub the state to prevent the toast from
+  // re-firing on browser refresh or back-navigation.
+  useEffect(() => {
+    if (location.state?.toastMessage) {
+      addToast(location.state.toastMessage, location.state.toastType ?? 'error');
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, addToast, navigate, location.pathname]);
 
   const authMode = useMemo(() => {
     if (location.pathname === '/login') {

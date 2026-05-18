@@ -1,5 +1,6 @@
 package com.example.instock.core.network
 
+import android.content.Context
 import com.example.instock.features.auth.AuthApiService
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -16,44 +17,45 @@ object ApiClient {
 
     private val authInterceptor = AuthInterceptor()
 
-    private val okHttpClient = OkHttpClient.Builder()
-        .addInterceptor(loggingInterceptor)
-        .addInterceptor(authInterceptor)
-        .build()
+    // Built lazily after init(context) is called so the 401 interceptor
+    // receives the application context at construction time.
+    private lateinit var okHttpClient: OkHttpClient
 
-    val authApi: AuthApiService by lazy {
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
+    fun init(context: Context) {
+        val appContext = context.applicationContext
+        okHttpClient = OkHttpClient.Builder()
+            .addInterceptor(loggingInterceptor)
+            .addInterceptor(authInterceptor)
+            .addInterceptor(ExpiredTokenInterceptor(appContext))
             .build()
-            .create(AuthApiService::class.java)
     }
 
-    val pantryApi: com.example.instock.features.pantry.PantryApiService by lazy {
-        Retrofit.Builder()
+    private fun retrofit(): Retrofit {
+        check(::okHttpClient.isInitialized) {
+            "ApiClient.init(context) must be called before using the API."
+        }
+        return Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-            .create(com.example.instock.features.pantry.PantryApiService::class.java)
+    }
+
+    val authApi: AuthApiService by lazy { retrofit().create(AuthApiService::class.java) }
+
+    val pantryApi: com.example.instock.features.pantry.PantryApiService by lazy {
+        retrofit().create(com.example.instock.features.pantry.PantryApiService::class.java)
     }
 
     val recipeApi: com.example.instock.features.recipes.RecipeApiService by lazy {
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(com.example.instock.features.recipes.RecipeApiService::class.java)
+        retrofit().create(com.example.instock.features.recipes.RecipeApiService::class.java)
     }
 
     val favoriteApi: com.example.instock.features.recipes.FavoriteApiService by lazy {
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(com.example.instock.features.recipes.FavoriteApiService::class.java)
+        retrofit().create(com.example.instock.features.recipes.FavoriteApiService::class.java)
+    }
+
+    val adminApi: com.example.instock.features.admin.AdminApiService by lazy {
+        retrofit().create(com.example.instock.features.admin.AdminApiService::class.java)
     }
 }

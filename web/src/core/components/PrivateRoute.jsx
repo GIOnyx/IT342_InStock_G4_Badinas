@@ -9,7 +9,16 @@ function PrivateRoute({ children, allowedRoles }) {
   }
 
   if (allowedRoles?.length && !allowedRoles.includes(user.role)) {
-    return <div className="results-state">Not Authorized</div>;
+    return (
+      <Navigate
+        to="/"
+        replace
+        state={{
+          toastMessage: 'Access Denied: Unauthorized Area',
+          toastType: 'error',
+        }}
+      />
+    );
   }
 
   return children;
